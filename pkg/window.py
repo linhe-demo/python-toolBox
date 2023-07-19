@@ -182,8 +182,8 @@ class Window:
         label.config(text="图片已成功上传！")
 
     def showOcrRes(self, callBack=None, res=None, label=None):
+        res.delete(1.0, END)
         if self.filePath is None:
-            res.delete(1.0, END)
             res.insert(INSERT, "请上传需要提取文字的图片")
             return
         info = callBack(self.filePath)
