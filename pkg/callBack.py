@@ -2,12 +2,14 @@
 import base64
 import json
 
+from common.errorEnum import ErrorEnum
+from pkg.output import Output
 from tools.curl import Curl
 
 
 class CallBack:
     def __init__(self):
-        pass
+        self.method = None
 
     @staticmethod
     def analyzePictureTextApi(name):
@@ -19,39 +21,36 @@ class CallBack:
     @staticmethod
     def assembleString(dataList, dataType):
         if len(dataList) == 0:
-            return json.dumps({"code": 500, "msg": "error", "data": "请输入需要格式化的内容"}, indent=4, ensure_ascii=False,
-                              sort_keys=True)
+            return Output(code=ErrorEnum.NOT_EMPTY.value['code'], msg="error",
+                          data=ErrorEnum.NOT_EMPTY.value['message']).send()
         if dataType == 1:
-            newData = []
-            for i in dataList:
-                if "\t" in i:
-                    newData = newData + i.split("\t")
-                if ' ' in i:
-                    newData = newData + i.split(' ')
-                else:
-                    newData.append(i)
-            backInfo = ",".join(newData)
+            backInfo = ",".join(CallBack.analyseData(dataList))
 
         elif dataType == 3:
-            if dataList.isJson(dataList) is False or dataList.startswith("{") is False or dataList.endswith("}") is False:
-                return json.dumps({"code": 500, "msg": "error", "data": "请输入正确的json数据"}, indent=4, ensure_ascii=False,
-                                  sort_keys=True)
+            if CallBack.isJson(dataList) is False or dataList.startswith("{") is False or dataList.endswith(
+                    "}") is False:
+                return Output(code=ErrorEnum.PARAM_ERROR.value['code'], msg="error",
+                              data=ErrorEnum.PARAM_ERROR.value['message']).send()
             backInfo = json.dumps(json.loads(dataList), indent=4, ensure_ascii=False).replace(
                 '\\n\\tat',
                 ' \n ').replace(
                 "\\n", ' \n ')
         else:
-            newData = []
-            for i in dataList:
-                if "\t" in i:
-                    newData = newData + i.split("\t")
-                if ' ' in i:
-                    newData = newData + i.split(' ')
-                else:
-                    newData.append(i)
-            backInfo = "','".join(newData)
+            backInfo = "','".join(CallBack.analyseData(dataList))
             backInfo = "'" + backInfo + "'"
         return backInfo
+
+    @staticmethod
+    def analyseData(dataList):
+        newData = []
+        for i in dataList:
+            if "\t" in i:
+                newData = newData + i.split("\t")
+            if ' ' in i:
+                newData = newData + i.split(' ')
+            else:
+                newData.append(i)
+        return dataList
 
     @staticmethod
     def isJson(text):
@@ -87,7 +86,7 @@ class CallBack:
                 differA.append({"line": i + 1, "data": tmpTextA})
                 differB.append({"line": i + 1, "data": tmpTextB})
 
-        return textA.strFormat(differA), textA.strFormat(differB)
+        return CallBack.strFormat(differA), CallBack.strFormat(differB)
 
     @staticmethod
     def strFormat(data):

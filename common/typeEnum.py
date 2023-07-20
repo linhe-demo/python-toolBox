@@ -1,4 +1,4 @@
-# 工具类型类
+# 工具类型枚举
 from enum import Enum
 
 
