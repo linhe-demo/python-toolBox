@@ -1,35 +1,54 @@
-# 数据库连接类
+# 数据库查询类
 import pymysql
 
-from tools.readFile import read_json_config
+from tools.readFile import File
 
 
 class Db:
-    def __init__(self):
-        self.config = read_json_config()
+    def __init__(self, sql=None, param=None):
+        self.config = self.config()
+        self.sql = sql
+        self.param = param
+        self.conn = self.connection()
+        self.cursor = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
 
     @staticmethod
-    def connection():
-        config = read_json_config()
-        tmpConfig = config['db']
+    def config():
+        dbConfig = File(path="\config\config.json")
+        return dbConfig.read_json_config()
+
+    def connection(self):
+        tmpConfig = self.config['tencentDb']
         return pymysql.connect(host=tmpConfig['host'], port=tmpConfig['port'], database=tmpConfig['database'],
                                user=tmpConfig['user'],
                                password=tmpConfig['password'], connect_timeout=tmpConfig['timeout'])
 
+    def getAll(self):
+        try:
+            self.cursor.execute(self.sql % self.param)
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
 
-        def getAll(sql, param, dbType=None):
-            if dbType == 'test':
-                db = dbConnection(dbType=dbType)
-            else:
-                db = dbConnection()
+    def getOne(self):
+        try:
+            self.cursor.execute(self.sql % self.param)
+            return self.cursor.fetchone()
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
 
-            with db.cursor(cursor=pymysql.cursors.DictCursor) as conn:
-                conn.execute(sql % param)
-                res = conn.fetchall()
-            return res
+    def execute(self):
+        try:
+            self.cursor.execute(self.sql % self.param)
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()
+            return False
 
-        def getOne(sql, param):
-            db = dbConnection()
-            cursor = db.cursor(cursor=pymysql.cursors.DictCursor)
-            cursor.execute(sql % param)
-            return cursor.fetchone()
+    def __del__(self):
+        self.cursor.close()
+        self.conn.close()

@@ -3,12 +3,10 @@ import tkinter as tk
 import re
 from tkinter import *
 from tkinter import filedialog
-
 from PIL import ImageTk, Image
 
-STR_FORMAT = 'str_format'
-STR_COMPARE = 'str_compare'
-OCR = 'ocr'
+from common.typeEnum import TypeEnum
+from tools.log import Log
 
 
 class Window:
@@ -27,6 +25,7 @@ class Window:
         self.toolType = toolType
         self.root = tk.Tk()
         self.filePath = None
+        self.type = TypeEnum
 
     def initWindow(self):
         self.root.geometry(str(self.width) + "x" + str(self.height))
@@ -39,13 +38,14 @@ class Window:
         y = (sh - self.height) / 2
         self.root.geometry("%dx%d+%d+%d" % (self.width, self.height, x, y))
 
-        if self.toolType == STR_FORMAT:
+        if self.toolType == self.type.STR_FORMAT.value:
             self.createStrFormat()
-        elif self.toolType == STR_COMPARE:
+        elif self.toolType == self.type.STR_COMPARE.value:
             self.createStrCompare()
-        elif self.toolType == OCR:
+        elif self.toolType == self.type.OCR.value:
             self.createOcr()
-
+        # 记录日志
+        Log(self.toolType).watchDog()
         tk.mainloop()
 
     def createStrFormat(self):
