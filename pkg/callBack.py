@@ -3,6 +3,7 @@ import base64
 import json
 
 from common.errorEnum import ErrorEnum
+from common.typeEnum import TypeEnum
 from pkg.output import Output
 from tools.curl import Curl
 
@@ -94,3 +95,15 @@ class CallBack:
         for i in data:
             tmpStr += "{}：{}{}".format(i.get("line", ''), i.get("data", ''), "\n")
         return tmpStr
+
+    @staticmethod
+    def postman(url, param, requestType):
+        if url is None or len(url) == 0:
+            return Output(code=ErrorEnum.REQUEST_URL_EMPTY.value['code'], msg="error",
+                          data=ErrorEnum.REQUEST_URL_EMPTY.value['message']).send()
+
+        curl = Curl(url=url, param=param)
+        if requestType.get() == TypeEnum.POST.value:
+            return json.dumps(json.loads(curl.getPostmanPostRes()), indent=4, ensure_ascii=False)
+        else:
+            return json.dumps(json.loads(curl.getPostmanGetRes()), indent=4, ensure_ascii=False)

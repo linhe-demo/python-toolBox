@@ -5,7 +5,9 @@ from tkinter import *
 from tkinter import filedialog
 from PIL import ImageTk, Image
 
+from common.errorEnum import ErrorEnum
 from common.typeEnum import TypeEnum
+from pkg.output import Output
 from tools.log import Log
 
 
@@ -44,8 +46,13 @@ class Window:
             self.createStrCompare()
         elif self.toolType == self.type.OCR.value:
             self.createOcr()
+        elif self.toolType == self.type.URL_REQUEST.value:
+            self.createPostman()
         # 记录日志
-        Log(self.toolType).watchDog()
+        try:
+            Log(self.toolType).watchDog()
+        except Exception as e:
+            print(f"Error: {e}")
         tk.mainloop()
 
     def createStrFormat(self):
@@ -136,6 +143,53 @@ class Window:
                           spacing3=2)
         result2.grid(row=5, column=3, columnspan=10, sticky=tk.E, padx=10)
 
+    def createPostman(self):
+        label1 = tk.Label(self.root, text=self.label1, fg="#67c23a")
+        label1.grid(row=0, column=1, sticky=tk.W, padx=8)
+        index = IntVar(value=1)  # index，并预先选中value为1的单选按钮
+        ra1 = Radiobutton(self.root, text='POST', variable=index, value=1, fg="#cd2828")
+        ra1.grid(row=0, column=2, columnspan=10, sticky=tk.W, padx=10, pady=4)
+        ra2 = Radiobutton(self.root, text='GET', variable=index, value=2, fg="#67c23a")
+        ra2.grid(row=0, column=3, columnspan=10, sticky=tk.W, padx=15, pady=4)
+        inputText1 = tk.Text(self.root, width=125, height=2, bg='#F8F8F8', fg='black', font=('宋体', 10), spacing1=2,
+                             spacing2=2,
+                             spacing3=2)
+        inputText1.grid(row=1, column=1, columnspan=10, sticky=tk.W, padx=10, pady=5)
+
+        label2 = tk.Label(self.root, text=self.label2, fg="#67c23a")
+        label2.grid(row=2, column=1, sticky=tk.W, padx=8, pady=1)
+
+        inputText2 = tk.Text(self.root, width=125, height=8, bg='#F8F8F8', fg='black', font=('宋体', 10), spacing1=2,
+                             spacing2=2,
+                             spacing3=2)
+        inputText2.grid(row=3, column=1, columnspan=10, sticky=tk.W, padx=10, pady=4)
+
+        tk.Button(self.root, text=self.btn1, width=10,
+                  command=lambda: self.showPostmanRes(inputText1=inputText1, inputText2=inputText2,
+                                                      callBack=self.callBack, res=result, index=index),
+                  bg='#409eff',
+                  fg='white').grid(
+            row=4,
+            column=10,
+            sticky=tk.E,
+            padx=95,
+            pady=5)
+        tk.Button(self.root, text=self.btn2, width=10,
+                  command=lambda: self.reset(input1=inputText1, input2=inputText2, result1=result),
+                  bg='#67c23a',
+                  fg='white').grid(row=4, column=10,
+                                   sticky=tk.E,
+                                   padx=10,
+                                   pady=5)
+        # 创建结果文本
+        label3 = tk.Label(self.root, text=self.resultName, fg='#409eff')
+        label3.grid(row=4, column=1, sticky=tk.W, padx=8, pady=10)
+
+        result = tk.Text(self.root, width=125, height=27, bg='#fff', fg='black', font=('宋体', 10), spacing1=2,
+                         spacing2=2,
+                         spacing3=2)
+        result.grid(row=5, column=1, columnspan=10, sticky=tk.W, padx=10)
+
     def createOcr(self):
         label1 = tk.Label(self.root, text=self.label1, fg="#67c23a")
         label1.grid(row=0, column=1, sticky=tk.W, padx=8)
@@ -184,12 +238,29 @@ class Window:
     def showOcrRes(self, callBack=None, res=None, label=None):
         res.delete(1.0, END)
         if self.filePath is None:
-            res.insert(INSERT, "请上传需要提取文字的图片")
+            res.insert(INSERT, Output(code=ErrorEnum.IMAGE_NOT_UPLOADED.value['code'], msg="error",
+                                      data=ErrorEnum.IMAGE_NOT_UPLOADED.value['message']).send())
             return
         info = callBack(self.filePath)
         res.insert(INSERT, info)
         label.config(text="")
         self.filePath = None
+
+    def showPostmanRes(self, inputText1=None, inputText2=None, callBack=None, res=None, index=None):
+        res.delete(1.0, END)
+        url = inputText1.get(1.0, END).strip()
+        param = inputText2.get(1.0, END).strip()
+        info = callBack(url, param, index)
+
+        # # Add formatted data to Text widget
+        res.insert(tk.END, info)
+
+        # Add color tags
+        res.tag_config("key", foreground="#cd2828")
+        res.tag_config("value", foreground="#1d57d9")
+
+        # Traverse formatted data and add color tags to keys and values
+        self.formatJson(info, res, "1.0")
 
     @staticmethod
     def showStrCompareRes(inputText1=None, inputText2=None, callBack=None, res1=None, res2=None):
