@@ -4,6 +4,7 @@
     1 图文识别功能 python script/ocr.py
     2 比较文本差异功能 python script/showdiffer.py
     3 字符串格式化功能 Python script/stringFormat.py
+    4 接口请求工具 Python script/postman.py
 
 附录：
 
