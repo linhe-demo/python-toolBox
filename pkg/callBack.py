@@ -103,7 +103,16 @@ class CallBack:
                           data=ErrorEnum.REQUEST_URL_EMPTY.value['message']).send()
 
         curl = Curl(url=url, param=param)
+
         if requestType.get() == TypeEnum.POST.value:
-            return json.dumps(json.loads(curl.getPostmanPostRes()), indent=4, ensure_ascii=False)
+            info = curl.getPostmanPostRes()
+            if CallBack.isJson(info) is True:
+                return True, json.dumps(json.loads(info), indent=4, ensure_ascii=False)
+            else:
+                return False, info
         else:
-            return json.dumps(json.loads(curl.getPostmanGetRes()), indent=4, ensure_ascii=False)
+            info = curl.getPostmanGetRes()
+            if CallBack.isJson(info) is True:
+                return True, json.dumps(json.loads(info), indent=4, ensure_ascii=False)
+            else:
+                return False, info

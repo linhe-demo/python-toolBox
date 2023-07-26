@@ -250,11 +250,11 @@ class Window:
         res.delete(1.0, END)
         url = inputText1.get(1.0, END).strip()
         param = inputText2.get(1.0, END).strip()
-        info = callBack(url, param, index)
-
+        status, info = callBack(url, param, index)
         # # Add formatted data to Text widget
         res.insert(tk.END, info)
-
+        if status is False:
+            return
         # Add color tags
         res.tag_config("key", foreground="#cd2828")
         res.tag_config("value", foreground="#1d57d9")
