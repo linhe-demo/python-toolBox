@@ -1,14 +1,15 @@
 # 数据库查询类
 import pymysql
 
-from tools.readFile import File
+from tools.file import File
 
 
 class Db:
-    def __init__(self, sql=None, param=None):
+    def __init__(self, sql=None, param=None, db=None):
         self.config = self.config()
         self.sql = sql
         self.param = param
+        self.db = db
         self.conn = self.connection()
         self.cursor = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
 
@@ -17,8 +18,15 @@ class Db:
         dbConfig = File(path="\config\config.json")
         return dbConfig.read_json_config()
 
+    def getCoon(self):
+        return self.connection()
+
     def connection(self):
-        tmpConfig = self.config['tencentDb']
+        if self.db is None:
+            tmpConfig = self.config['tencentDb']
+        else:
+            tmpConfig = self.config[self.db]
+
         return pymysql.connect(host=tmpConfig['host'], port=tmpConfig['port'], database=tmpConfig['database'],
                                user=tmpConfig['user'],
                                password=tmpConfig['password'], connect_timeout=tmpConfig['timeout'])
@@ -41,7 +49,10 @@ class Db:
 
     def execute(self):
         try:
-            self.cursor.execute(self.sql % self.param)
+            if self.param is None:
+                self.cursor.execute(self.sql)
+            else:
+                self.cursor.execute(self.sql % self.param)
             self.conn.commit()
             return True
         except Exception as e:

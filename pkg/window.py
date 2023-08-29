@@ -147,10 +147,11 @@ class Window:
         label1 = tk.Label(self.root, text=self.label1, fg="#67c23a")
         label1.grid(row=0, column=1, sticky=tk.W, padx=8)
         index = IntVar(value=1)  # index，并预先选中value为1的单选按钮
-        ra1 = Radiobutton(self.root, text='POST', variable=index, value=1, fg="#cd2828")
-        ra1.grid(row=0, column=2, columnspan=10, sticky=tk.W, padx=10, pady=4)
-        ra2 = Radiobutton(self.root, text='GET', variable=index, value=2, fg="#67c23a")
-        ra2.grid(row=0, column=3, columnspan=10, sticky=tk.W, padx=15, pady=4)
+        if self.btn1 != "同步":
+            ra1 = Radiobutton(self.root, text='POST', variable=index, value=1, fg="#cd2828")
+            ra1.grid(row=0, column=2, columnspan=10, sticky=tk.W, padx=10, pady=4)
+            ra2 = Radiobutton(self.root, text='GET', variable=index, value=2, fg="#67c23a")
+            ra2.grid(row=0, column=3, columnspan=10, sticky=tk.W, padx=15, pady=4)
         inputText1 = tk.Text(self.root, width=125, height=2, bg='#F8F8F8', fg='black', font=('宋体', 10), spacing1=2,
                              spacing2=2,
                              spacing3=2)

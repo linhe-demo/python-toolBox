@@ -5,6 +5,7 @@ import json
 from common.errorEnum import ErrorEnum
 from common.typeEnum import TypeEnum
 from pkg.output import Output
+from pkg.syncData import SyncData
 from tools.curl import Curl
 
 
@@ -116,3 +117,11 @@ class CallBack:
                 return True, json.dumps(json.loads(info), indent=4, ensure_ascii=False)
             else:
                 return False, info
+
+    @staticmethod
+    def syncTable(database, condition, index):
+        condition_json = json.loads(condition)
+
+        res = SyncData(database=database, table=condition_json.get("table"), condition=condition_json.get("condition")).run()
+
+        return False, res
