@@ -5,12 +5,13 @@ import pandas as pd
 
 
 class File:
-    def __init__(self, path=None, row=None, fileData=None, sheetName=None, sheetTitle=None):
+    def __init__(self, path=None, row=None, fileData=None, sheetName=None, sheetTitle=None, txtData=None):
         self.path = path
         self.fileData = fileData
         self.sheetName = sheetName
         self.sheetTitle = sheetTitle
         self.row = row
+        self.txtData = txtData
 
     def read_json_config(self):
         with open(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + self.path, 'r') as json_file:
@@ -27,6 +28,14 @@ class File:
                 data_line = line.strip("\n").split("\r")  # 去除首尾换行符，并按换行划分
                 data.append(data_line)
         return data
+
+    def writeTxt(self):
+        if not os.path.exists(self.path):
+            open(self.path, 'w').close()
+
+        with open(self.path, 'w') as f:
+            for i in self.txtData:
+                f.write(i + "\n")
 
     def readRow(self):
         feature = []

@@ -5,7 +5,6 @@ import json
 from common.errorEnum import ErrorEnum
 from common.typeEnum import TypeEnum
 from pkg.output import Output
-from pkg.syncData import SyncData
 from tools.curl import Curl
 
 

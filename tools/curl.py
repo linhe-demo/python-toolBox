@@ -1,8 +1,9 @@
 # curl 请求类
 import json
 
-from tools.readFile import File
 import requests
+
+from tools.file import File
 
 
 class Curl:

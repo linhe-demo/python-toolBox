@@ -33,6 +33,7 @@ class Db:
 
     def getAll(self):
         try:
+            print(self.sql % self.param)
             self.cursor.execute(self.sql % self.param)
             return self.cursor.fetchall()
         except Exception as e:
