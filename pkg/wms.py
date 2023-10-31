@@ -20,7 +20,7 @@ class Wms:
         updateStatements = []
         for i in configList:
             sql = WmsTable(index="getCategoryData").getSql()
-            data = Db(sql=sql, param=(self.tableName, "'c" + i + "g%'"), db="proxy_db").getAll()
+            data = Db(sql=sql, param=(self.tableName, "'c" + i + "g%'"), db="db").getAll()
 
             df = pd.DataFrame(data)
 

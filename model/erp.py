@@ -15,6 +15,9 @@ class ErpDatatable:
             ''',
             "ecs_goods_ec_goods_save_test": '''
                 INSERT INTO %s VALUES (%s)
+            ''',
+            "check_sku_exist": '''
+                SELECT * FROM ecs_goods WHERE uniq_sku = '%s'
             '''
         }
 
