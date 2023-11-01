@@ -31,11 +31,18 @@ class File:
 
     def writeTxt(self):
         if not os.path.exists(self.path):
-            open(self.path, 'w').close()
+            open(self.path, 'w', encoding='utf-8').close()
 
-        with open(self.path, 'w') as f:
+        with open(self.path, 'w', encoding='utf-8') as f:
             for i in self.txtData:
                 f.write(i + "\n")
+
+    def writeTxtInline(self):
+        if not os.path.exists(self.path):
+            open(self.path, 'w', encoding='utf-8').close()
+
+        with open(self.path, 'w', encoding='utf-8') as f:
+            f.write(self.txtData + "\n")
 
     def readRow(self):
         feature = []
