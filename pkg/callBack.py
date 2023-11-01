@@ -2,6 +2,8 @@
 import base64
 import json
 
+from syncdata.models import SyncData
+
 from common.errorEnum import ErrorEnum
 from common.typeEnum import TypeEnum
 from pkg.output import Output
