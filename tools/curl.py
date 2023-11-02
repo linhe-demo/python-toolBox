@@ -4,6 +4,7 @@ import json
 import requests
 
 from tools.file import File
+from tools.log import Log
 
 
 class Curl:
@@ -21,6 +22,7 @@ class Curl:
 
     def getPostmanPostRes(self):
         try:
+            Log(level="INFO", text=json.dumps({"url": self.url, "param": json.loads(self.param)}), console=False).localFile()
             res = requests.post(self.url, data=self.param, headers={'content-type': 'application/json'})
         except Exception as e:
             return "请求发生错误: {}".format(e)
