@@ -1,12 +1,14 @@
 import json
-
-from data.tmsOrderParam import TmsOrderParam
-from pkg.tms import Tms
-from tools.file import File
-from tools.log import Log
-from tools.show import Show
+import os
+import sys
 
 if __name__ == "__main__":
+    # 引入自定义包路径
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    from pkg.tms import Tms
+    from tools.file import File
+    from tools.show import Show
+    from data.tmsOrderParam import TmsOrderParam
 
     inbound = True  # 是否开启创建入库单
     outbound = False  # 是否开启创建出库单
