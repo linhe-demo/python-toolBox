@@ -44,3 +44,4 @@ class Wms:
         # 写入数据
         File(path="../.././data/bk.txt", txtData=insertStatements).writeTxt()
         File(path="../.././data/update.txt", txtData=updateStatements).writeTxt()
+

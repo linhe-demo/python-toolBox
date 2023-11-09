@@ -5,7 +5,8 @@ class WmsTable:
     @staticmethod
     def sqlMap():
         return {
-            "getCategoryData": "SELECT * FROM %s WHERE platform_sku like  %s"
+            "getCategoryData": "SELECT * FROM %s WHERE platform_sku like  %s",
+
         }
 
     def getSql(self):

@@ -23,7 +23,7 @@ if __name__ == "__main__":
     if inbound is True:
         res = Tms(url1=config["tmsUrl"]["createInboundTms"], url2=config["tmsUrl"]["createInboundWms"],
                   param=TmsOrderParam(index="inbound").getParam(),
-                  dataList=outboundList, orderType="inbound").createOrder()  # 向proxy 发起创建人库单
+                  dataList=inboundList, orderType="inbound").createOrder()  # 向proxy 发起创建人库单
         Show(text="创建入库单：", style="red").print()
 
     if outbound is True:
@@ -31,4 +31,5 @@ if __name__ == "__main__":
                   param=TmsOrderParam(index="outbound").getParam(),
                   dataList=outboundList, orderType="outbound").createOrder()  # 向proxy 发起创建出库单
         Show(text="创建出库单：", style="cyan").print()
+
     Show(text=json.loads(res), style="blue").print()
