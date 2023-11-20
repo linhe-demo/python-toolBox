@@ -2,3 +2,4 @@ config/config.json
 script/demo.py
 data
 log
+.idea
