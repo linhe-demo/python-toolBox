@@ -39,11 +39,12 @@ class Erp:
         sql = ErpDatatable(index="get_order_info").getSql()
         data = Db(sql=sql, param=self.orderSn, db="erp_db_prod").getAll()
         orderIdList = []
+        sqlList = []
         for i in data:
             if self.warehouse != int(i.get('facility_id', 0)):
                 sql = ErpDatatable(index="update_order_info").getSql() % (self.warehouse, i.get('order_id'))
-                print("订单仓库修改sql: {}".format(sql))
-                orderIdList .append(str(i.get('order_id')))
+                sqlList.append(sql)
+                orderIdList.append(str(i.get('order_id')))
 
         if len(orderIdList) == 0:
             print("采购单当前仓库与需要转换的仓库一致，不允许转换！")
@@ -54,12 +55,14 @@ class Erp:
         for i in data:
             if self.warehouse != int(i.get('facility_id', 0)):
                 sql = ErpDatatable(index="update_purchase_info").getSql() % (self.warehouse, i.get('order_id'))
-                print("批量采购仓库修改sql: {}".format(sql))
+                sqlList.append(sql)
         # 如果已收货 发货明细数据也需修改
         sql = ErpDatatable(index="get_delivery_info").getSql()
         data = Db(sql=sql, param="','".join(orderIdList), db="erp_db_prod").getAll()
         for i in data:
             if self.warehouse != i.get('facility_id', 0):
                 sql = ErpDatatable(index="update_delivery_info").getSql() % (self.warehouse, i.get('order_id'))
-                print("发货明细仓库修改sql: {}".format(sql))
+                sqlList.append(sql)
 
+        for i in sqlList:
+            print(i)
