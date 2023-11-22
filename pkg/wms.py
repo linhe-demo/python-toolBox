@@ -14,6 +14,7 @@ class Wms:
         self.database = database
         self.primary = primary
         self.resData = []
+        self.specialData = []
 
     def dealTableData(self):
         configList = self.config.split(",")
@@ -63,6 +64,8 @@ class Wms:
         # 将结果数据写入文件
         File(path="../.././data/inventoryAgeSql.txt", txtData=self.resData).writeTxt()
 
+        # print("','".join(self.specialData))
+
     def getInventoryAge(self, data, desc, semaphore):
         # 上锁
         semaphore.acquire()
@@ -71,7 +74,9 @@ class Wms:
             sql = WmsTable(index="getInventoryAgeInitData").getSql()
             data = Db(sql=sql, param="','".join(data), db="db").getAll()
             for m in data:
-                sql = "INSERT INTO fw_in_stock_age(`sku`, `num`, `inventory_type`, `status`, `create_time`) VALUES('%s', %s, %s, %s, '%s') " % (m.get('sku'), m.get('num'), m.get('inventory_type'), m.get('status'), m.get('create_time'))
+                sql = "INSERT INTO fw_in_stock_age(`sku`, `num`, `inventory_type`, `status`, `create_time`) VALUES('%s', %s, %s, %s, '%s');" % (m.get('sku'), m.get('num'), m.get('inventory_type'), m.get('status'), m.get('create_time'))
                 self.resData.append(sql)
+                # if m.get('create_time') == '2023-11-22 00:00:00' and m.get('sku').startswith('wmsskuc') is False:
+                #     self.specialData.append(m.get('sku'))
         # 释放锁
         semaphore.release()
