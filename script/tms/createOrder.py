@@ -10,8 +10,8 @@ if __name__ == "__main__":
     from tools.show import Show
     from data.tmsOrderParam import TmsOrderParam
 
-    inbound = True  # 是否开启创建入库单
-    outbound = False  # 是否开启创建出库单
+    inbound = False  # 是否开启创建入库单
+    outbound = True  # 是否开启创建出库单
 
     outboundList = []  # 已创建出库号列表
     inboundList = []  # 已创建入库单号列表
