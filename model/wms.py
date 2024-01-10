@@ -26,7 +26,17 @@ class WmsTable:
 	                                            sku
                                           HAVING num > 0''',
             "getMovePsku": '''
-                SELECT fgs.sku, fgs.sku_id, mdt.*  FROM move_de_tmp2 mdt INNER JOIN fw_goods_sku fgs ON fgs.platform_sku = mdt.psku WHERE fgs.warehouse_id = %s
+                SELECT 
+                            mdt.id, mdt.psku, mdt.location_code, SUM(mdt.available_qty) total, fgs.sku, fgs.sku_id
+                FROM 
+                            move_de_tmp2 mdt
+                INNER JOIN 
+                            fw_goods_sku fgs ON fgs.platform_sku = mdt.psku 
+                WHERE 1
+                ANd mdt.psku NOT IN ('%s')
+                AND fgs.warehouse_id = %s
+                GROUP BY mdt.psku, mdt.location_code
+                HAVING total = 1;
             ''',
             "getNewInventory": '''
                 SELECT * FROM fw_inventory where sku = '%s' AND location_code = '%s';
@@ -37,8 +47,13 @@ class WmsTable:
             ''',
             "getStockAge": '''
                 SELECT * FROM ff_wms.fw_in_stock_age WHERE sku = '%s';
+            ''',
+            "getGoodsSkuBk": '''
+                SELECT platform_sku, barcode FROM ff_wms.fw_goods_sku_bk WHERE barcode <> '' GROUP BY platform_sku, barcode;
+            ''',
+            "getPskuMapping": '''
+                SELECT * FROM ff_wms.fw_psku_mapping WHERE sku = '%s';
             '''
-
         }
 
     def getSql(self):

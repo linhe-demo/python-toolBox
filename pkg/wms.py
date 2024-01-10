@@ -8,7 +8,7 @@ from tools.threadingTool import MyThreading
 
 
 class Wms:
-    def __init__(self, config=None, tableName=None, database=None, primary=None, warehouseId=None):
+    def __init__(self, config=None, tableName=None, database=None, primary=None, warehouseId=None, psku=None, index=None):
         self.config = config
         self.tableName = tableName
         self.database = database
@@ -16,6 +16,8 @@ class Wms:
         self.resData = []
         self.specialData = []
         self.warehouseId = warehouseId
+        self.psku = psku
+        self.index = index
 
     def dealTableData(self):
         configList = self.config.split(",")
@@ -86,11 +88,15 @@ class Wms:
     def createLog(self):
         inventoryLog = []
         stockAgeLog = []
+        tmpList = []
         sql = WmsTable(index="getMovePsku").getSql()
-        data = Db(sql=sql, db="db", param=self.warehouseId).getAll()
+        data = Db(sql=sql, db="db", param=("','".join(self.psku), self.warehouseId)).getAll()
         for m in data:
             sql = WmsTable(index="getNewInventory").getSql()
             info = Db(sql=sql, db="db", param=(m.get('sku'), m.get('location_code'))).getOne()
+            if info is None:
+                continue
+            print(m)
             inventoryLogSql = WmsTable(index="insertInventoryLog").getSql().format(
                 1311469176121118722 + m.get('id'),
                 info.get('id'),
@@ -118,22 +124,52 @@ class Wms:
                 0,
                 0,
                 0,
-                '2023-12-22 18:14:00',
+                '2024-01-05 16:49:00',
                 'sys',
-                '2023-12-22 18:14:00',
+                '2024-01-05 16:49:00',
                 'sys'
             )
             inventoryLog.append(inventoryLogSql)
 
             # 检查库龄数据是否存在
-            sql = WmsTable(index="getStockAge").getSql()
-            stockAgeInfo = Db(sql=sql, db="db", param=(m.get('sku'))).getOne()
-            if stockAgeInfo is None:
-                tmpSql = WmsTable(index="insertStockAgeLog").getSql().format(
-                    info.get('sku'), info.get('available_qty'), 0, 1, '2023-12-22 18:14:00', '2023-12-22 18:14:00')
-            else:
-                tmpSql = "UPDATE ff_wms.fw_in_stock_age SET num = num + {} WHERE id = {}".format(info.get('available_qty'), stockAgeInfo.get('id'))
-            stockAgeLog.append(tmpSql)
-        # 将结果数据写入文件
+        #     sql = WmsTable(index="getStockAge").getSql()
+        #     stockAgeInfo = Db(sql=sql, db="db", param=(m.get('sku'))).getOne()
+        #     if stockAgeInfo is None:
+        #         # tmpSql = WmsTable(index="insertStockAgeLog").getSql().format(
+        #         #     info.get('sku'), info.get('available_qty'), 0, 1, '2023-12-22 18:14:00', '2023-12-22 18:14:00')
+        #         tmpList.append(1111111)
+        #     else:
+        #         tmpSql = "UPDATE ff_wms.fw_in_stock_age SET num = num + {} WHERE id = {}".format(info.get('available_qty'), stockAgeInfo.get('id'))
+        #         tmpList.append(str(stockAgeInfo.get('id')))
+        #     # stockAgeLog.append(tmpSql)
+        # # 将结果数据写入文件
         resData = inventoryLog + stockAgeLog
         File(path="../.././data/moveLogSql.txt", txtData=resData).writeTxt()
+
+    def fixBarcode(self):
+        sql = WmsTable(index="getGoodsSkuBk").getSql()
+        data = Db(sql=sql, db="db", param=()).getAll()
+        targetList = Array(target=data, step=100).ArrayChunk()
+
+        # 开启多线程消费数据
+        MyThreading(num=10, data=targetList, func=self.getFixBarcodeSql).semaphoreJob()
+
+        # 将结果数据写入文件
+        File(path="../.././data/fixBarcode.txt", txtData=self.resData).writeTxt()
+
+    def getFixBarcodeSql(self, data, desc, semaphore):
+        print("开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+        for i in data:
+            # 检查PskuMapping 表是否存在映射数据
+            sql = WmsTable(index="getPskuMapping").getSql()
+            data = Db(sql=sql, db="db", param=(i.get('platform_sku'))).getOne()
+            if data is not None:
+                if data.get('barcode', '') != i.get('barcode'):
+                    sql = "UPDATE  `ff_wms`.fw_psku_mapping SET barcode = '{}' WHERE id = {}".format(i.get('barcode'),
+                                                                                                     data.get('id'))
+                    print(sql)
+                    self.resData.append(sql)
+        # 释放锁
+        semaphore.release()

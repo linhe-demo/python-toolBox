@@ -1,15 +1,22 @@
+import calendar
+import datetime
+
+import pandas as pd
+
 from common.warehouseEnum import WarehouseEnum
 from model.erp import ErpDatatable
 from pkg.db import Db
+from pkg.highcharts import Highcharts
 from tools.file import File
 
 
 class Erp:
-    def __init__(self, filePath=None, warehouse=None, orderSn=None):
+    def __init__(self, filePath=None, warehouse=None, orderSn=None, date=None):
         self.filePath = filePath
         self.orderSn = orderSn
         self.warehouse = warehouse
         self.type = WarehouseEnum
+        self.date = date
 
     def checkSkuExists(self):
         data = File(path=self.filePath).read_txt()
@@ -40,6 +47,8 @@ class Erp:
         data = Db(sql=sql, param=self.orderSn, db="erp_db_prod").getAll()
         orderIdList = []
         sqlList = []
+        if data is None:
+            return
         for i in data:
             if self.warehouse != int(i.get('facility_id', 0)):
                 sql = ErpDatatable(index="update_order_info").getSql() % (self.warehouse, i.get('order_id'))
@@ -66,3 +75,32 @@ class Erp:
 
         for i in sqlList:
             print(i)
+
+    def getOrderInfo(self):
+        x_data = []
+        tmp_x_data = {}
+        y_data = []
+        for year in self.date:
+            print("开始处理 {} 数据".format(year))
+            # 循环遍历每个月
+            tmpY = []
+            for month in range(1, 13):
+                # 获取当前月份的第一天和最后一天
+                first_month_day = datetime.date(year, month, 1)
+                last_month_day = datetime.date(year, month, calendar.monthrange(year, month)[1])
+                sql = ErpDatatable(index="get_order_info_money").getSql()
+                data = Db(sql=sql, param=(first_month_day, last_month_day), db="erp_db_prod").getOne()
+                tmp_x_data[month] = "{}月".format(month)
+                if data is None:
+                    tmpY.append(0)
+                else:
+                    tmpY.append(data.get('t'))
+
+                print("{} 月数据已处理".format(month))
+
+            y_data.append({"name": year, "data": tmpY})
+
+        for k, v in tmp_x_data.items():
+            x_data.append(v)
+
+        Highcharts(tableType="line", name="chart", title="订单金额图", x_data=x_data, y_data=y_data).draw()

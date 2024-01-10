@@ -30,7 +30,20 @@ class ErpDatatable:
             "get_delivery_info": '''
                 SELECT * FROM eris.delivery_list_detail WHERE order_id IN ('%s')
             ''',
-            "update_delivery_info": '''UPDATE eris.delivery_list_detail SET facility_id = '%s' WHERE order_id = '%s';'''
+            "update_delivery_info": '''UPDATE eris.delivery_list_detail SET facility_id = '%s' WHERE order_id = '%s';''',
+            "get_order_info_money": '''
+                SELECT
+	sum( order_amount ) AS t,
+	LEFT ( order_time, 7 ) AS s 
+FROM
+	ecs_order_info 
+WHERE
+	order_time >= '%s 00:00:00' 
+	AND order_time <= '%s 23:59:59' 
+	AND order_status <> 2 
+GROUP BY
+	s;
+            '''
         }
 
     def getSql(self):

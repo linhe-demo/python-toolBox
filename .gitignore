@@ -3,3 +3,5 @@ script/demo.py
 data
 log
 .idea
+/script/*.html
+/script/erp/*.html
