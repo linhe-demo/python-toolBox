@@ -1,5 +1,6 @@
 import pandas as pd
 
+from model.tms import TmsTable
 from model.wms import WmsTable
 from pkg.db import Db
 from tools.array import Array
@@ -8,7 +9,8 @@ from tools.threadingTool import MyThreading
 
 
 class Wms:
-    def __init__(self, config=None, tableName=None, database=None, primary=None, warehouseId=None, psku=None, index=None):
+    def __init__(self, config=None, tableName=None, database=None, primary=None, warehouseId=None, psku=None,
+                 index=None, path=None):
         self.config = config
         self.tableName = tableName
         self.database = database
@@ -18,6 +20,9 @@ class Wms:
         self.warehouseId = warehouseId
         self.psku = psku
         self.index = index
+        self.path = path
+        self.excelData = []
+        self.initData = []
 
     def dealTableData(self):
         configList = self.config.split(",")
@@ -171,5 +176,143 @@ class Wms:
                                                                                                      data.get('id'))
                     print(sql)
                     self.resData.append(sql)
+        # 释放锁
+        semaphore.release()
+
+    def inventoryCheck(self):
+        limit = 3000
+        for k, v in self.warehouseId.items():
+            print("开始处理仓库：{}".format(k))
+            sql = WmsTable(index="getWarehouseCodeRecordNum").getSql()
+            res = Db(sql=sql, db="db", param=k).getOne()
+            warehouseRecodeNum = res.get('num', 0)
+            offsetList = []
+            if warehouseRecodeNum > 0:
+                num = 0
+                while num < warehouseRecodeNum:
+                    offsetList.append({"offset": num, "limit": limit, "warehouse": k})
+                    num += limit
+                # 开启多线程消费数据
+                MyThreading(num=10, data=offsetList, func=self.findInitData).semaphoreJob()
+            else:
+                break
+
+        targetList = Array(target=self.initData, step=1000).ArrayChunk()
+
+        # 开启多线程消费数据
+        MyThreading(num=10, data=targetList, func=self.comparedInventory).semaphoreJob()
+
+        if len(self.resData) != 0:
+            targetList = Array(target=self.resData, step=100).ArrayChunk()
+            # 开启多线程消费数据
+            MyThreading(num=10, data=targetList, func=self.analysisRes).semaphoreJob()
+            if len(self.excelData) != 0:
+                tmpMap = {}
+                for s in self.excelData:
+                    if tmpMap.get(s.get('analyze_reasons')) is None:
+                        tmpMap[s.get('analyze_reasons')] = [s]
+                    else:
+                        tmpMap[s.get('analyze_reasons')].append(s)
+                tmpExcelData = []
+                for k, v in tmpMap.items():
+                    for mm in v:
+                        tmpExcelData.append(mm)
+                File(path=self.path, fileData={0: tmpExcelData}, sheetName={0: "wms与tms库存对比表"},
+                     sheetTitle={0: ["sku", "warehouse", "platform_code", "wms_inventory_new_num", "wms_inventory_second_num", "tms_inventory_num",
+                                     "analyze_reasons", "remark"]}).writeExcel()
+
+    def comparedInventory(self, data, desc, semaphore):
+        print("查询库存 多线程消费： {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+
+        wmsInventoryMap = {}
+        tmsInventoryMap = {}
+
+        # 查询wms库存信息
+        sql = WmsTable(index="getWmsInventoryNum").getSql()
+        wmsTmpData = Db(sql=sql, db="db", param=("','".join(data))).getAll()
+        if wmsTmpData is not None:
+            for i in wmsTmpData:
+                wmsInventoryMap[i.get("sku")] = i
+        # 查询tms库存信息
+        sql = TmsTable(index="getTmsInventoryNum").getSql()
+        tmsTmpData = Db(sql=sql, db="proxy_db", param=("','".join(data))).getAll()
+
+        if tmsTmpData is not None:
+            for i in tmsTmpData:
+                tmsInventoryMap[i.get("sku")] = i
+
+        # 比较数据
+        for k, v in wmsInventoryMap.items():
+            if tmsInventoryMap.get(k) is not None:
+                if v.get('new_num', 0) + v.get('second_num', 0) != tmsInventoryMap.get(k).get('num', 0):
+                    self.resData.append(
+                        {"sku": k, "warehouse": v.get('warehouse_code', ""), "platform_code": v.get("platform_code"),
+                         "wms_inventory_new_num": v.get('new_num', 0), "wms_inventory_second_num": v.get('second_num', 0),
+                         "tms_inventory_num": tmsInventoryMap.get(k).get('num', 0)})
+            else:
+                self.resData.append(
+                    {"sku": k, "warehouse": v.get('warehouse_code', ""), "platform_code": v.get("platform_code"),
+                     "wms_inventory_new_num": v.get('new_num', 0), "wms_inventory_second_num": v.get('second_num', 0), "tms_inventory_num": 0})
+
+        # 释放锁
+        semaphore.release()
+
+    def analysisRes(self, data, desc, semaphore):
+        print("分析原因多线程消费： {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+
+        for n in data:
+            print("分析原因多线程 {} 开始分析sku：{} 异常原因".format(desc, n.get("sku")))
+            if n.get('platform_code') == "VV":
+                n['analyze_reasons'] = 'vv商品报废'
+                n['remark'] = ""
+                self.excelData.append(n)
+                continue
+            # 判断是否存在二手库存
+            if n.get('wms_inventory_new_num') == n.get('tms_inventory_num', 0):
+                n['analyze_reasons'] = 'wms 存在二手库存'
+                n['remark'] = ""
+                self.excelData.append(n)
+                continue
+            #  计算刷数总数
+            sql = WmsTable(index="fix_data_check").getSql()
+            fixDataRes = Db(sql=sql, db="db", param=(n.get('sku'))).getOne()
+            if fixDataRes is not None:
+                if fixDataRes.get('num') is not None and fixDataRes.get('num') > n.get('tms_inventory_num', 0):
+                    n['analyze_reasons'] = "刷数导致数据异常"
+                    n['remark'] = ''
+                    continue
+
+            # 判断是否是品类合并导致数据异常
+            if n.get('sku', '').startswith("wmsskuc"):
+                n['analyze_reasons'] = "品类数据合并 proxy库存数据异常"
+                n['remark'] = ''
+                continue
+
+            if Array(target=n.get('tms_inventory_num', 0), data=[-1, 1]).InArray():
+                n['analyze_reasons'] = 'proxy 数据异常'
+                n['remark'] = ""
+                self.excelData.append(n)
+                continue
+
+            n['analyze_reasons'] = "暂未分析出原因"
+            n['remark'] = ''
+            self.excelData.append(n)
+
+        # 释放锁
+        semaphore.release()
+
+    def findInitData(self, data, desc, semaphore):
+        print("获取原始数据多线程消费： {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+        sql = WmsTable(index="getSkuList").getSql()
+        data = Db(sql=sql, db="db", param=(data.get('warehouse'), data.get('limit'), data.get('offset'))).getAll()
+        for i in data:
+            self.initData.append(i.get('sku'))
+
         # 释放锁
         semaphore.release()
