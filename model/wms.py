@@ -55,10 +55,10 @@ class WmsTable:
                 SELECT * FROM ff_wms.fw_psku_mapping WHERE sku = '%s';
             ''',
             "getSkuList": '''
-                SELECT sku, warehouse_code FROM ff_wms.fw_goods_sku WHERE warehouse_code = '%s' GROUP BY sku ORDER BY sku_id ASC LIMIT %s OFFSET %s
+                SELECT sku, warehouse_code, platform_sku FROM ff_wms.fw_goods_sku WHERE warehouse_code = '%s' GROUP BY sku ORDER BY sku_id ASC LIMIT %s OFFSET %s
             ''',
             "getWmsInventoryNum": '''
-                SELECT SUM(IF(quality = 100, available_qty + exp_shelve_qty + occupied_qty + locking_qty + suspense_qty + in_transit_qty, 0)) AS new_num, SUM(IF(quality = 200, available_qty + exp_shelve_qty + occupied_qty + locking_qty + suspense_qty + in_transit_qty, 0)) AS second_num, warehouse_code, sku, platform_code FROM ff_wms.fw_inventory WHERE sku IN ('%s') GROUP BY sku
+                SELECT SUM(IF(quality = 100, available_qty + exp_shelve_qty + occupied_qty + locking_qty + suspense_qty + in_transit_qty, 0)) AS new_num, SUM(IF(quality = 200, available_qty + exp_shelve_qty + occupied_qty + locking_qty + suspense_qty + in_transit_qty, 0)) AS second_num, warehouse_code, sku, platform_code FROM ff_wms.fw_inventory WHERE sku IN ('%s') and `status` <> 200  GROUP BY sku
             ''',
             "pan_ying_check": '''
                 SELECT * FROM ff_wms.fw_inventory_log WHERE sku = '%s' ORDER BY create_time DESC LIMIT 1;
@@ -77,6 +77,9 @@ class WmsTable:
             ''',
             "direct_move_check": '''
                 SELECT * FROM ff_wms.fw_inventory_log WHERE sku = '%s' AND business_type = 'DIRECT_MOVE' LIMIT 1;
+            ''',
+            "getWmsGoodsInfo": '''
+                SELECT * FROM ff_wms.fw_goods_sku WHERE platform_sku = '%s' AND warehouse_code = '%s';
             '''
         }
 

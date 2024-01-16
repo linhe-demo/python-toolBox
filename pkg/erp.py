@@ -1,12 +1,13 @@
 import calendar
 import datetime
-
-import pandas as pd
+import math
+import time
 
 from common.warehouseEnum import WarehouseEnum
 from model.erp import ErpDatatable
 from pkg.db import Db
 from pkg.highcharts import Highcharts
+from tools.curl import Curl
 from tools.file import File
 
 
@@ -104,3 +105,17 @@ class Erp:
             x_data.append(v)
 
         Highcharts(tableType="line", name="chart", title="订单金额图", x_data=x_data, y_data=y_data).draw()
+
+    def getErpInventory(self):
+        erpInventoryMap = {}
+        for k, v in self.date.items():
+            tmpTime = math.ceil(time.time())
+            print("开始获取 仓库{} 数据".format(k))
+            # 开始获取 erp 库存信息
+            info = Curl(method="Apiv1/Wms/sku/inventory",
+                        param={"warehouseCode": k, "platformCode": "JJ", "sku": ",".join(v), "time": str(tmpTime)},
+                        timestamp=tmpTime).getErpStockInfo()
+            if len(info) > 0:
+                for s in info:
+                    erpInventoryMap[s.get('goods_sn')] = s.get('new_num')
+        return erpInventoryMap
