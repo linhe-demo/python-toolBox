@@ -7,4 +7,4 @@ if __name__ == "__main__":  # wms 与 tms 库存对比工具
     # 'FFWH0039': 'AU Warehouse-JD'
     # 'FFWH0063': 'CA Warehouse'
     warehouseList = {'FFWH0007': 'UK Warehouse'}
-    Wms(warehouseId=warehouseList, path="../.././data/InventoryCheck.xlsx").inventoryCheck()
+    Wms(warehouseId=warehouseList, path="../.././data/InventoryCompared.xlsx").inventoryCompare()

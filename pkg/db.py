@@ -5,12 +5,13 @@ from tools.file import File
 
 
 class Db:
-    def __init__(self, sql=None, param=None, db=None):
+    def __init__(self, sql=None, param=None, db=None, showlog=None):
         self.config = self.config()
         self.sql = sql
         self.param = param
         self.db = db
         self.conn = self.connection()
+        self.showLog = showlog
         self.cursor = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
 
     @staticmethod
@@ -33,7 +34,9 @@ class Db:
 
     def getAll(self):
         try:
-            print(self.sql % self.param)
+            if self.showLog is True:
+                print(self.sql % self.param)
+
             self.cursor.execute(self.sql % self.param)
             return self.cursor.fetchall()
         except Exception as e:
@@ -42,7 +45,8 @@ class Db:
 
     def getOne(self):
         try:
-            print(self.sql % self.param)
+            if self.showLog is True:
+                print(self.sql % self.param)
             self.cursor.execute(self.sql % self.param)
             return self.cursor.fetchone()
         except Exception as e:

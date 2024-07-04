@@ -509,3 +509,6 @@ class Wms:
             dealRes = "是"
         return {"new_num": wmsTmpData.get("new_num"), "num": tmsTmpData.get("num"), "analysis": analysisRes,
                 "res": dealRes}
+
+
+

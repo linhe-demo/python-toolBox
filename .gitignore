@@ -5,3 +5,4 @@ log
 .idea
 /script/*.html
 /script/erp/*.html
+./tmp

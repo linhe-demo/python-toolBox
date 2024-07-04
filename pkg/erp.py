@@ -115,7 +115,8 @@ class Erp:
             info = Curl(method="Apiv1/Wms/sku/inventory",
                         param={"warehouseCode": k, "platformCode": "JJ", "sku": ",".join(v), "time": str(tmpTime)},
                         timestamp=tmpTime).getErpStockInfo()
-            if len(info) > 0:
+
+            if info is not None and len(info) > 0:
                 for s in info:
                     erpInventoryMap[s.get('goods_sn')] = s.get('new_num')
         return erpInventoryMap

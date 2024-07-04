@@ -65,6 +65,21 @@ class Curl:
 
         return res.content
 
+    def syncStockInfo(self):
+        try:
+            res = requests.post(self.url, data=self.param, headers={'token': 'A0E7C4DD3F825B4E571A9F3AFD66AB98AAAAHUYNDAFASWDXFSDFSDGSFDDIUGBKJFDSOBJHA'})
+        except Exception as e:
+            return "请求发生错误: {}".format(e)
+        if res.content is None:
+            return "接口返回数据为空！"
+        elif res.content == "":
+            return "接口返回空字符串！"
+        elif res.content is False:
+            return "响应结束！"
+        elif res.content == b'':
+            return "响应结束！"
+        return res.content
+
     def getPostmanGetRes(self):
         try:
             res = requests.get(self.url, data=self.param, headers={'content-type': 'application/json'})
