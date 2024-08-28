@@ -55,6 +55,8 @@ class Db:
 
     def execute(self):
         try:
+            if self.showLog is True:
+                print(self.sql % self.param)
             if self.param is None:
                 self.cursor.execute(self.sql)
             else:

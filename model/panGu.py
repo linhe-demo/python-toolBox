@@ -63,6 +63,24 @@ class PanGuTable:
             ''',
             "getCategoryAttributeMaxSort": '''
                 SELECT MAX(display_order) AS `order` FROM category_attribute WHERE cat_id = %s;
+            ''',
+            "copyPanguAttributeData": '''
+                SELECT * FROM pangu.attribute WHERE `value` IN ('%s') AND `name` = '%s'
+            ''',
+            "copyPanguAttributeLanguageData": '''
+                SELECT * FROM pangu.attribute_languages WHERE attr_id IN (%s)
+            ''',
+            "copyPanguCategoryAttributeData": '''
+                SELECT * FROM pangu_website.category_attribute WHERE attr_id IN (%s)
+            ''',
+            "copyPanguWebAttributeData": '''
+                SELECT * FROM pangu_website.attribute WHERE `value` IN ('%s') AND `name` = '%s'
+            ''',
+            "copyPanguWebAttributeLanguageData": '''
+                SELECT * FROM pangu_website.attribute_languages_v2 WHERE attr_id IN (%s)
+            ''',
+            "copyPanguWebCategoryAttributeData": '''
+                SELECT * FROM pangu_website.category_attribute WHERE attr_id IN (%s) AND cat_id = %s
             '''
         }
 

@@ -12,9 +12,10 @@ from tools.threadingTool import MyThreading
 
 
 class PanGu:
-    def __init__(self, param=None, param2=None, path=None, limit=None, offset=None):
+    def __init__(self, param=None, param2=None, parma3=None, path=None, limit=None, offset=None):
         self.param = param
         self.param2 = param2
+        self.param3 = parma3
         self.path = path
         self.resData = []
         self.resMap = {}
@@ -312,7 +313,6 @@ class PanGu:
             data = Db(sql=sql, param=n, db="panGuWebPron").getOne()
             order = data.get("order") + 1
             for m in attributeId:
-
                 tmpSql = '''INSERT INTO `pangu_website`.`category_attribute` (cat_id, attr_id, is_delete, updated_at, display_order, is_necessary, display_filter) VALUES ({}, {}, 0, NOW(), {}, 0, -1);'''.format(
                     n, m, order)
                 updateSql.append(tmpSql)
@@ -320,3 +320,88 @@ class PanGu:
 
         File(path=self.path, txtData=updateSql).writeTxt()
 
+    def moveAttributeData(self):
+        print("copy attribute data")
+        print("copy pangu attribute")
+        panGuIdList = self.copyPanGuAttr()
+        print("copy pangu attributeLanguage")
+        self.copyPanGuAttrLang(panGuIdList)
+        print("copy pangu categoryAttribute")
+        self.copyPanGuCategoryAttr(panGuIdList)
+        print("copy pangu web attribute")
+        panGuWebList = self.copyPanWebAttr()
+        print("copy pangu web attributeLanguage")
+        self.copyPanWebAttrLang(panGuWebList)
+        print("copy pangu web categoryAttribute")
+        self.copPanWebCategoryAttr(panGuWebList)
+
+    def moveStyleData(self):
+        print("copy attribute data")
+        pass
+
+    def copyPanGuAttr(self):
+        idList = []
+        sql = PanGuTable(index="copyPanguAttributeData").getSql()
+        data = Db(sql=sql, param=("','".join(self.param2), self.param3), db="panGuWebPron").getAll()
+        for i in data:
+            self.checkExistAndClean("pangu.attribute", "id = {}".format(i.get("id")))
+            sqlList = SqlTool(data=i, table="pangu.attribute").createInsertStatements()
+            Db(sql=sqlList, param=(), db="panGuWeb").execute()
+            idList.append(str(i.get("id")))
+        return idList
+
+    def copyPanGuAttrLang(self, idList):
+        color = self.param2
+        sql = PanGuTable(index="copyPanguAttributeLanguageData").getSql()
+        data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        for i in data:
+            self.checkExistAndClean("pangu.attribute_languages", "id = {}".format(i.get("id")))
+            sqlList = SqlTool(data=i, table="pangu.attribute_languages").createInsertStatements()
+            Db(sql=sqlList, param=(), db="panGuWeb").execute()
+
+    def copyPanGuCategoryAttr(self, idList):
+        catId = self.param
+        sql = PanGuTable(index="copyPanguCategoryAttributeData").getSql()
+        data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        for i in data:
+            self.checkExistAndClean("pangu.category_attribute", "id = {}".format(i.get("id")))
+            sqlList = SqlTool(data=i, table="pangu.category_attribute").createInsertStatements()
+            Db(sql=sqlList, param=(), db="panGuWeb").execute()
+
+    def copyPanWebAttr(self):
+        idList = []
+        sql = PanGuTable(index="copyPanguWebAttributeData").getSql()
+        data = Db(sql=sql, param=("','".join(self.param2), self.param3), db="panGuWebPron").getAll()
+        for i in data:
+            self.checkExistAndClean("pangu_website.attribute", "id = {}".format(i.get("id")))
+            sqlList = SqlTool(data=i, table="pangu_website.attribute").createInsertStatements()
+            Db(sql=sqlList, param=(), db="panGuWeb").execute()
+            idList.append(str(i.get("id")))
+        return idList
+
+    def copyPanWebAttrLang(self, idList):
+        color = self.param2
+        sql = PanGuTable(index="copyPanguWebAttributeLanguageData").getSql()
+        data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        for i in data:
+            self.checkExistAndClean("pangu_website.attribute_languages_v2", "attr_lang_id = {}".format(i.get("attr_lang_id")))
+            sqlList = SqlTool(data=i, table="pangu_website.attribute_languages_v2").createInsertStatements()
+            Db(sql=sqlList, param=(), db="panGuWeb").execute()
+
+    def copPanWebCategoryAttr(self, idList):
+        catId = self.param
+        sql = PanGuTable(index="copyPanguWebCategoryAttributeData").getSql()
+        data = Db(sql=sql, param=(",".join(idList), catId), db="panGuWebPron").getAll()
+        for i in data:
+            self.checkExistAndClean("pangu_website.category_attribute", "id = {}".format(i.get("id")))
+            sqlList = SqlTool(data=i, table="pangu_website.category_attribute").createInsertStatements()
+            Db(sql=sqlList, param=(), db="panGuWeb").execute()
+
+    @staticmethod
+    def checkExistAndClean(table, condition):
+        sql = "select * from {} where {}".format(table, condition)
+        # 检查表中是否存冲突数据
+        data = Db(sql=sql, param=(), db="panGuWeb").getOne()
+        if data is not None:
+            # 删除冲突数据
+            Db(sql="delete from {} where {}".format(table, condition), param=(), db="panGuWeb").execute()
