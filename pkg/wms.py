@@ -1,3 +1,4 @@
+import json
 import math
 import time
 
@@ -256,6 +257,13 @@ class Wms:
                 for s in self.excelData:
                     tmpMap[s.get('sku')] = s
                 return tmpMap
+
+    def inventoryCompare(self):
+        erpTmpData = Erp(warehouse="FFWH0036").getErpInventorySingle()
+        data = []
+        for i in erpTmpData:
+            data.append(json.dumps(i))
+        File(path="../.././data/bbb.txt", txtData=data).writeTxt()
 
     def analysisEmail(self):
         print("开始读取错误邮件信息！该过程需要几分钟请耐心等待......")

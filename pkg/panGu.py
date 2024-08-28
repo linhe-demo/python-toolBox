@@ -261,27 +261,62 @@ class PanGu:
                 # 找出需要处理的图片
                 for s in excelData:
                     updateMap[s.get("goods_id")] = s.get("goods_id")
-        #             if s.get("is_default") == 1:
-        #                 # 获取当前图片image_id
-        #                 sql = PanGuTable(index="getGoodsImageInfo").getSql()
-        #                 data = Db(sql=sql, param=(s.get("goods_id"), s.get("url").replace("https://cdn-4.jjshouse.com"
-        #                                                                                   "/upimg/l/", "")),
-        #                           db="panGuWebPron").getOne()
-        #                 if len(data) == 0:
-        #                     continue
-        #                 insertSql = SqlTool(table="pangu_website.goods_gallery_v2", data=data).createInsertStatements()
-        #
-        #                 backUpList.append(insertSql)
-        #                 updateList.append("UPDATE pangu_website.goods_gallery_v2 SET is_default = 1 WHERE id = {};".format(data.get('id')))
-        #                 updateMap[data.get("goods_id")] = data.get("goods_id")
-        #     if len(backUpList) > 0:
-        #
-        #         File(path="../.././data/{}bk.txt".format(i), txtData=backUpList).writeTxt()
-        # if len(updateList) > 0:
-        #     File(path="../.././data/shopbycolor.txt", txtData=updateList).writeTxt()
-        #
-        # print(len(updateMap))
-        # print(list(updateMap.values()))
+            #             if s.get("is_default") == 1:
+            #                 # 获取当前图片image_id
+            #                 sql = PanGuTable(index="getGoodsImageInfo").getSql()
+            #                 data = Db(sql=sql, param=(s.get("goods_id"), s.get("url").replace("https://cdn-4.jjshouse.com"
+            #                                                                                   "/upimg/l/", "")),
+            #                           db="panGuWebPron").getOne()
+            #                 if len(data) == 0:
+            #                     continue
+            #                 insertSql = SqlTool(table="pangu_website.goods_gallery_v2", data=data).createInsertStatements()
+            #
+            #                 backUpList.append(insertSql)
+            #                 updateList.append("UPDATE pangu_website.goods_gallery_v2 SET is_default = 1 WHERE id = {};".format(data.get('id')))
+            #                 updateMap[data.get("goods_id")] = data.get("goods_id")
+            #     if len(backUpList) > 0:
+            #
+            #         File(path="../.././data/{}bk.txt".format(i), txtData=backUpList).writeTxt()
+            # if len(updateList) > 0:
+            #     File(path="../.././data/shopbycolor.txt", txtData=updateList).writeTxt()
+            #
+            # print(len(updateMap))
+            # print(list(updateMap.values()))
             print(len(list(updateMap.values())))
             aa = list(updateMap.values())
             print(",".join(map(str, aa)))
+
+    def getInsertCategoryData(self):
+        category = [8, 9, 10, 16, 17, 18, 22, 45]
+        tryOnAndSamples = ['400', '420']
+        attribute = ['Ruby Rose Garden', 'Sapphire Blooms', 'Sage Green Garden', 'Blush Rose Blooms', 'Azure Floral']
+
+        # 获取样衣试衣对应的shop by color 属性id
+        sql = PanGuTable(index="tryOnAndSamples").getSql()
+        data = Db(sql=sql, param=",".join(tryOnAndSamples), db="panGuWebPron").getAll()
+        for i in data:
+            category.append(i.get("id"))
+
+        attributeId = []
+        # 获取属性id
+        sql = PanGuTable(index="getAttrByValue").getSql()
+        data = Db(sql=sql, param="','".join(attribute), db="panGuWebPron").getAll()
+        for i in data:
+            attributeId.append(i.get("id"))
+
+        updateSql = []
+        # 组装sql
+        for n in category:
+            # 获取当前品类最大排序值
+            sql = PanGuTable(index="getCategoryAttributeMaxSort").getSql()
+            data = Db(sql=sql, param=n, db="panGuWebPron").getOne()
+            order = data.get("order") + 1
+            for m in attributeId:
+
+                tmpSql = '''INSERT INTO `pangu_website`.`category_attribute` (cat_id, attr_id, is_delete, updated_at, display_order, is_necessary, display_filter) VALUES ({}, {}, 0, NOW(), {}, 0, -1);'''.format(
+                    n, m, order)
+                updateSql.append(tmpSql)
+                order += 1
+
+        File(path=self.path, txtData=updateSql).writeTxt()
+

@@ -120,3 +120,26 @@ class Erp:
                 for s in info:
                     erpInventoryMap[s.get('goods_sn')] = s.get('new_num')
         return erpInventoryMap
+
+    def getErpInventorySingle(self):
+        tmpTime = math.ceil(time.time())
+        info = Curl(method="Apiv1/Wms/sku/inventory",
+                    param={"warehouseCode": self.warehouse, "platformCode": "JJ", "sku": "", "time": str(tmpTime)},
+                    timestamp=tmpTime).getErpStockInfo()
+
+        key = info.get("key")
+        tims = 0
+        erpInventoryMap = []
+        if len(key) > 0:
+            while True:
+                tmpTime = math.ceil(time.time())
+                print("开始拉取库存信息 时间：".format(tims))
+                time.sleep(60)
+                tims = tims + 60
+                data = Curl(method="Apiv1/Wms/sku/statistics",
+                            param={"key": key,"time": str(tmpTime)},
+                            timestamp=tmpTime).getErpStockInfo()
+                if len(data.get('list')) > 0:
+                    erpInventoryMap = data.get('list')
+                    break
+        return erpInventoryMap

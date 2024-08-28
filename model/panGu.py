@@ -54,6 +54,15 @@ class PanGuTable:
             ''',
             "getGoodsImageInfo": '''
                 SELECT * FROM goods_gallery_v2 WHERE goods_id = %s AND url = '%s'
+            ''',
+            "tryOnAndSamples": '''
+                SELECT * FROM category WHERE parent_id IN (%s)
+            ''',
+            "getAttrByValue": '''
+                SELECT * FROM attribute WHERE `value` IN ('%s')
+            ''',
+            "getCategoryAttributeMaxSort": '''
+                SELECT MAX(display_order) AS `order` FROM category_attribute WHERE cat_id = %s;
             '''
         }
 

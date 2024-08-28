@@ -36,7 +36,7 @@ class Curl:
             "{}{}?sign={}&time={}".format(self.config['erp_config']['url'], self.method, sign, self.timestamp),
             data=self.param, json=True)
 
-        Log(level="INFO", text="返回结果：{}".format(res.content)).localFile()
+        # Log(level="INFO", text="返回结果：{}".format(res.content)).localFile()
 
         if len(res.content) == 0:
             Log(level="INFO", console="接口 {} 未返回数据".format(res.content), text="接口 {} 未返回数据".format(res)).localFile()
@@ -45,7 +45,7 @@ class Curl:
         if res.get('code') != 0:
             Log(level="ERROR", console="接口数据返回异常", text=res.content).localFile()
         else:
-            return res.get('list')
+            return res
 
     def getPostmanPostRes(self):
         try:
