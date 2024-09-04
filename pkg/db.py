@@ -64,7 +64,7 @@ class Db:
             self.conn.commit()
             return True
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error: {e} %s" % format(self.sql % self.param))
             self.conn.rollback()
             return False
 

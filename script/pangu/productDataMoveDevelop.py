@@ -6,6 +6,6 @@ if __name__ == "__main__":
 
     for i in categoryList:
         print("begin category {} ".format(i))
-        PanGu(param=i, param2=colorList, parma3="Sale Color").moveAttributeData()
+        # PanGu(param=i, param2=colorList, parma3="Sale Color").moveAttributeData()
 
-        # PanGu(param=i, param2=colorList, parma3="Sale Color").moveStyleData()
+        PanGu(param=i, param2=colorList, parma3="Color").moveStyleData()

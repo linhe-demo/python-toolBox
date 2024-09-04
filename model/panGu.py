@@ -81,6 +81,148 @@ class PanGuTable:
             ''',
             "copyPanguWebCategoryAttributeData": '''
                 SELECT * FROM pangu_website.category_attribute WHERE attr_id IN (%s) AND cat_id = %s
+            ''',
+            "copyPanguStyleData": '''
+                SELECT * FROM pangu.style WHERE `value` IN ('%s') AND `name` = '%s'
+            ''',
+            "copyPanguStyleLanguageData": '''
+                SELECT * FROM pangu.style_languages WHERE style_id IN (%s)
+            ''',
+            "copyPanguCategoryStyleData": '''
+                SELECT * FROM pangu.category_style WHERE style_id in (%s)
+            ''',
+            "copyPanWebStyleData": '''
+                SELECT * FROM pangu_website.style WHERE `value` IN ('%s') AND `name` = '%s'
+            ''',
+            "copyPanWebStyleLanguageData": '''
+                SELECT * FROM pangu_website.style_languages WHERE style_id IN (%s)
+            ''',
+            "copyPanWebCategoryStyleData": '''
+                SELECT * FROM pangu_website.
+            ''',
+            "getWebAttributeDiff": '''
+                SELECT
+                        tmp.attr_lang_id,
+                        tmp.color,
+                        tmp.languages_id,
+                        tmp.attr_values,
+                        tc.languages_id AS tmp_languages_id,
+                        tc.`value` AS tmp_value 
+                FROM
+                        (
+                        SELECT
+                            a.`name`,
+                            a.`value` AS color,
+                            alv.attr_id,
+                            alv.languages_id,
+                            alv.attr_values,
+                            alv.attr_lang_id
+                        FROM
+                            attribute a
+                            INNER JOIN attribute_languages_v2 alv ON a.id = alv.attr_id 
+                            AND a.`name` = alv.attr_name 
+                        WHERE
+                            a.`value` IN ('%s') 
+                            AND a.is_delete = 0 
+                            AND alv.languages_id IN ('%s') 
+                        ) AS tmp
+                        LEFT JOIN tmp_color tc ON tc.color = tmp.color 
+                        AND tc.languages_id = tmp.languages_id 
+                HAVING
+                    attr_values <> tmp_value;
+            ''',
+            "getWebStyleDiff": '''
+                SELECT
+                        tmp.sl_id,
+                        tmp.color,
+                        tmp.languages_id,
+                        tmp.`value`,
+                        tc.languages_id AS tmp_languages_id,
+                        tc.`value` AS tmp_value 
+                    FROM
+                        (
+                        SELECT
+                            s.`name`,
+                            s.`value` AS color,
+                            sl.style_id,
+                            sl.languages_id,
+                            sl.`value`,
+                            sl.sl_id
+                        FROM
+                            style s
+                            INNER JOIN style_languages sl ON s.id = sl.style_id 
+                            AND s.`name` = sl.`name` 
+                        WHERE
+                            s.`value` IN ('%s') 
+                            AND s.is_delete = 0 
+                            AND sl.languages_id IN ('%s') 
+                        ) AS tmp
+                        LEFT JOIN tmp_color tc ON tc.color = tmp.color 
+                        AND tc.languages_id = tmp.languages_id 
+                    HAVING
+                        value <> tmp_value;
+            ''',
+            "getPanAttributeDiff": '''
+                SELECT
+                        tmp.id,
+                        tmp.color,
+                        tmp.languages_id,
+                        tmp.`value`,
+                        tc.languages_id AS tmp_languages_id,
+                        tc.`value` AS tmp_value 
+                    FROM
+                        (
+                        SELECT
+                            a.`name`,
+                            a.`value` AS color,
+                            alv.attr_id,
+                            alv.languages_id,
+                            alv.`value`,
+                            alv.id
+                        FROM
+                            pangu.attribute a
+                            INNER JOIN pangu.attribute_languages alv ON a.id = alv.attr_id 
+                            AND a.`name` = alv.`name`
+                        WHERE
+                            a.`value` IN ('%s') 
+                            AND a.is_delete = 0 
+                            AND alv.languages_id IN ('%s') 
+                        ) AS tmp
+                        LEFT JOIN pangu_website.tmp_color tc ON tc.color = tmp.color 
+                        AND tc.languages_id = tmp.languages_id 
+                    HAVING
+                        `value` <> tmp_value;
+            ''',
+            "getPanStyleDiff": '''
+                SELECT
+                        tmp.id,
+                        tmp.color,
+                        tmp.languages_id,
+                        tmp.`value`,
+                        tc.languages_id AS tmp_languages_id,
+                        tc.`value` AS tmp_value 
+                    FROM
+                        (
+                        SELECT
+                            s.`name`,
+                            s.`value` AS color,
+                            sl.style_id,
+                            sl.languages_id,
+                            sl.`value`,
+                            sl.id
+                        FROM
+                            pangu.style s
+                            INNER JOIN pangu.style_languages sl ON s.id = sl.style_id 
+                            AND s.`name` = sl.`name` 
+                        WHERE
+                            s.`value` IN ('%s') 
+                            AND s.is_delete = 0 
+                            AND sl.languages_id IN ('%s') 
+                        ) AS tmp
+                        LEFT JOIN pangu_website.tmp_color tc ON tc.color = tmp.color 
+                        AND tc.languages_id = tmp.languages_id 
+                    HAVING
+                        `value` <> tmp_value;
             '''
         }
 
