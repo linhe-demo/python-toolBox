@@ -71,7 +71,7 @@ class PanGuTable:
                 SELECT * FROM pangu.attribute_languages WHERE attr_id IN (%s)
             ''',
             "copyPanguCategoryAttributeData": '''
-                SELECT * FROM pangu_website.category_attribute WHERE attr_id IN (%s)
+                SELECT * FROM pangu.category_attribute WHERE attr_id IN (%s)
             ''',
             "copyPanguWebAttributeData": '''
                 SELECT * FROM pangu_website.attribute WHERE `value` IN ('%s') AND `name` = '%s'
@@ -120,7 +120,6 @@ class PanGuTable:
                         FROM
                             attribute a
                             INNER JOIN attribute_languages_v2 alv ON a.id = alv.attr_id 
-                            AND a.`name` = alv.attr_name 
                         WHERE
                             a.`value` IN ('%s') 
                             AND a.is_delete = 0 
@@ -150,8 +149,7 @@ class PanGuTable:
                             sl.sl_id
                         FROM
                             style s
-                            INNER JOIN style_languages sl ON s.id = sl.style_id 
-                            AND s.`name` = sl.`name` 
+                            INNER JOIN style_languages sl ON s.id = sl.style_id  
                         WHERE
                             s.`value` IN ('%s') 
                             AND s.is_delete = 0 
@@ -182,7 +180,6 @@ class PanGuTable:
                         FROM
                             pangu.attribute a
                             INNER JOIN pangu.attribute_languages alv ON a.id = alv.attr_id 
-                            AND a.`name` = alv.`name`
                         WHERE
                             a.`value` IN ('%s') 
                             AND a.is_delete = 0 
@@ -212,8 +209,7 @@ class PanGuTable:
                             sl.id
                         FROM
                             pangu.style s
-                            INNER JOIN pangu.style_languages sl ON s.id = sl.style_id 
-                            AND s.`name` = sl.`name` 
+                            INNER JOIN pangu.style_languages sl ON s.id = sl.style_id  
                         WHERE
                             s.`value` IN ('%s') 
                             AND s.is_delete = 0 
@@ -223,6 +219,15 @@ class PanGuTable:
                         AND tc.languages_id = tmp.languages_id 
                     HAVING
                         `value` <> tmp_value;
+            ''',
+            "getPanguStockData": '''
+                SELECT sku, available_num, available_tryon_num FROM stocks WHERE sku in ('%s')
+            ''',
+            "getValidationData": '''
+                select * from goods_validation where goods_id in ('%s')
+            ''',
+            "getGoodsImageColor": '''
+                select * from goods_gallery_v2 where goods_id = %s and url = '%s';
             '''
         }
 

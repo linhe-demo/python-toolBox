@@ -2,6 +2,7 @@ import json
 import time
 
 from model.panGu import PanGuTable
+from model.website import websiteTable
 from pkg.db import Db
 from tools.array import Array
 from tools.curl import Curl
@@ -353,6 +354,8 @@ class PanGu:
         idList = []
         sql = PanGuTable(index="copyPanguAttributeData").getSql()
         data = Db(sql=sql, param=("','".join(self.param2), self.param3), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu.attribute", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu.attribute").createInsertStatements()
@@ -361,18 +364,26 @@ class PanGu:
         return idList
 
     def copyPanGuAttrLang(self, idList):
+        if idList is None or len(idList) == 0:
+            return
         color = self.param2
         sql = PanGuTable(index="copyPanguAttributeLanguageData").getSql()
         data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu.attribute_languages", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu.attribute_languages").createInsertStatements()
             Db(sql=sqlList, param=(), db="panGuWeb").execute()
 
     def copyPanGuCategoryAttr(self, idList):
+        if idList is None or len(idList) == 0:
+            return
         catId = self.param
         sql = PanGuTable(index="copyPanguCategoryAttributeData").getSql()
         data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu.category_attribute", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu.category_attribute").createInsertStatements()
@@ -382,6 +393,8 @@ class PanGu:
         idList = []
         sql = PanGuTable(index="copyPanguWebAttributeData").getSql()
         data = Db(sql=sql, param=("','".join(self.param2), self.param3), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu_website.attribute", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu_website.attribute").createInsertStatements()
@@ -390,9 +403,13 @@ class PanGu:
         return idList
 
     def copyPanWebAttrLang(self, idList):
+        if idList is None or len(idList) == 0:
+            return
         color = self.param2
         sql = PanGuTable(index="copyPanguWebAttributeLanguageData").getSql()
         data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        if data is None:
+            return
         for i in data:
             self.checkExistAndClean("pangu_website.attribute_languages_v2",
                                     "attr_lang_id = {}".format(i.get("attr_lang_id")))
@@ -400,9 +417,13 @@ class PanGu:
             Db(sql=sqlList, param=(), db="panGuWeb").execute()
 
     def copyPanWebCategoryAttr(self, idList):
+        if idList is None or len(idList) == 0:
+            return
         catId = self.param
         sql = PanGuTable(index="copyPanguWebCategoryAttributeData").getSql()
         data = Db(sql=sql, param=(",".join(idList), catId), db="panGuWebPron").getAll()
+        if data is None:
+            return
         for i in data:
             self.checkExistAndClean("pangu_website.category_attribute", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu_website.category_attribute").createInsertStatements()
@@ -412,6 +433,8 @@ class PanGu:
         idList = []
         sql = PanGuTable(index="copyPanguStyleData").getSql()
         data = Db(sql=sql, param=("','".join(self.param2), self.param3), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu.style", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu.style").createInsertStatements()
@@ -420,9 +443,13 @@ class PanGu:
         return idList
 
     def copyPanGuStyleLang(self, idList):
+        if idList is None or len(idList) == 0:
+            return
         color = self.param2
         sql = PanGuTable(index="copyPanguStyleLanguageData").getSql()
         data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu.style_languages",
                                     "id = {}".format(i.get("id")))
@@ -430,9 +457,13 @@ class PanGu:
             Db(sql=sqlList, param=(), db="panGuWeb").execute()
 
     def copyPanguCategoryStyle(self, idList):
+        if idList is None or len(idList) == 0:
+            return
         catId = self.param
         sql = PanGuTable(index="copyPanguCategoryStyleData").getSql()
         data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu.category_style", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu.category_style").createInsertStatements()
@@ -442,6 +473,8 @@ class PanGu:
         idList = []
         sql = PanGuTable(index="copyPanWebStyleData").getSql()
         data = Db(sql=sql, param=("','".join(self.param2), self.param3), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu_website.style", "id = {}".format(i.get("id")))
             sqlList = SqlTool(data=i, table="pangu_website.style").createInsertStatements()
@@ -450,9 +483,13 @@ class PanGu:
         return idList
 
     def copyPanWebStyleLang(self, idList):
+        if idList is None or len(idList) == 0:
+            return
         color = self.param2
         sql = PanGuTable(index="copyPanWebStyleLanguageData").getSql()
         data = Db(sql=sql, param=(",".join(idList)), db="panGuWebPron").getAll()
+        if data is None or len(data) == 0:
+            return
         for i in data:
             self.checkExistAndClean("pangu_website.style_languages",
                                     "sl_id = {}".format(i.get("sl_id")))
@@ -472,18 +509,28 @@ class PanGu:
         data = File(path=self.param).read_excl()
         saveDate = []
 
+        sql = websiteTable(index="getTmpColor").getSql()
+        existData = Db(sql=sql, param=(), db="panGuWebPron").getAll()
+        existMap = {}
+        for i in existData:
+            existMap[i.get("color") + "-" + str(i.get("languages_id"))] = i.get("value")
+
         for i in data:
             if len(i) != len(self.param2) + 1:
                 print("数据格式错误")
                 continue
             num = 1
             for m in self.param2:
+
                 sql = '''insert into pangu_website.tmp_color(color, languages_id, value) VALUES("{}", {}, "{}")'''.format(
-                    i[0], m, i[num])
+                    i[0], m, i[num]);
+
+                if existMap.get(i[0] + "-" + str(m)) != i[num]:
+                    print(sql)
                 saveDate.append(sql)
                 num = num + 1
-        for s in saveDate:
-            Db(sql=s, param=(), db="panGuWeb").execute()
+        # for s in saveDate:
+        #     Db(sql=s, param=(), db="panGuWeb").execute()
 
     def colorTranslate(self):
 
@@ -491,6 +538,7 @@ class PanGu:
         self.fixWebStyle()
         self.fixPanAttribute()
         self.fixPanStyle()
+
         File(path="../.././data/panGuUpdateColorTranslateSql.txt", txtData=self.resData).writeTxt()
         File(path="../.././data/panGuBackupColorTranslateSql.txt", txtData=self.resData2).writeTxt()
 
@@ -550,3 +598,25 @@ class PanGu:
                 self.resData2.append(
                     '''update pangu.style_languages set `value` = "{}" where id = {};'''.format(
                         i.get("value"), i.get("id")))
+
+    def getImageColor(self):
+        sql = PanGuTable(index="getValidationData").getSql()
+        data = Db(sql=sql, param="','".join(self.param), db="panGuWebPron",
+                  ).getAll()
+
+        goodsMap = {}
+
+        for i in data:
+            goodsId = i.get("goods_id")
+            if i.get("status") == 'FAILED':
+                info = json.loads(i.get("result"))
+                for k, v in info.get('medias').items():
+                    sql = PanGuTable(index="getGoodsImageColor").getSql()
+                    data = Db(sql=sql, param=(goodsId, k), db="panGuWebPron", showlog=True).getOne()
+                    if goodsMap.get(goodsId) is not None:
+                        goodsMap[goodsId].append(data.get('color'))
+                    else:
+                        goodsMap[goodsId] = [data.get('color')]
+
+        for k, v in goodsMap.items():
+            print(k, v)
