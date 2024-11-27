@@ -62,6 +62,9 @@ class websiteTable:
                     gss.last_update_time > '%s' 
                 GROUP BY
                     ssm.source_sku;
+            ''',
+            "getWebScreenData": '''
+                select * from goods_color_img
             '''
         }
 

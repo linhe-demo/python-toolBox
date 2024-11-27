@@ -620,3 +620,41 @@ class PanGu:
 
         for k, v in goodsMap.items():
             print(k, v)
+
+    def fixGoodsScreenData(self):
+        sql = PanGuTable(index="getPanScreenData").getSql()
+        data = Db(sql=sql, param=(), db="panGuWebPron"
+                  ).getAll()
+        panguMap = {}
+        for i in data:
+            key = str(i.get("goods_id")) + i.get("img_url")
+            panguMap[key] = {"gci_id": i.get("gci_id"), "s3_synced": i.get("s3_synced")}
+
+        sql = websiteTable(index="getWebScreenData").getSql()
+        data = Db(sql=sql, param=(), db="websitePron", ).getAll()
+        webMap = {}
+        for i in data:
+            key = str(i.get("goods_id")) + i.get("img_url")
+            webMap[key] = {"gci_id": i.get("gci_id"), "s3_synced": i.get("s3_synced")}
+
+        diffList = []
+        for k, v in panguMap.items():
+            print(k, webMap.get(k))
+            if webMap.get(k) is not None:
+                if v.get("s3_synced") != webMap.get(k).get("s3_synced"):
+                    diffList.append(webMap.get(k).get("gci_id"))
+
+        print(diffList)
+
+    def getShippingGoodsLog(self):
+        sql = PanGuTable(index="getShippingGoodsLog").getSql()
+        data = Db(sql=sql, param=(), db="websiteLogPron"
+                  ).getAll()
+
+        saveData = []
+
+        for i in data:
+            saveData.append(
+                'insert into pangu_website.batch_operation_log(goods_id, `type`, old_data, new_data, `user`, create_at) values({}, 12, "", "{}","{}" ,"{}");'
+                .format(i.get("goods_id"), i.get("content"), i.get("operator"), i.get("last_update_time")))
+        File(path="../.././data/shippingGoodsLog.txt", txtData=saveData).writeTxt()

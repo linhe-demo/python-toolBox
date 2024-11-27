@@ -12,7 +12,7 @@ class PanGuTable:
                 SELECT id, sku FROM product_sku WHERE id in (%s)
             ''',
             "getStockSku": '''
-                select sku from stocks where last_synced_at >= '%s' and last_synced_at <= '%s' order by id desc limit %s OFFSET %s;
+                select sku from stocks where last_synced_at >= '%s' and last_synced_at <= '%s' and sku in('P008CT8SX','P003JRZ83')  order by id desc limit %s OFFSET %s;
             ''',
             "getGoodsColorGoodsId": '''
                 SELECT 
@@ -228,6 +228,12 @@ class PanGuTable:
             ''',
             "getGoodsImageColor": '''
                 select * from goods_gallery_v2 where goods_id = %s and url = '%s';
+            ''',
+            "getPanScreenData": '''
+                select * from goods_color_img
+            ''',
+            "getShippingGoodsLog": '''
+                select * from category_shipping_fee_log
             '''
         }
 
