@@ -1,6 +1,10 @@
 import json
+import os
 import time
+from pathlib import Path
 
+import openpyxl
+import requests
 from model.panGu import PanGuTable
 from model.website import websiteTable
 from pkg.db import Db
@@ -658,3 +662,249 @@ class PanGu:
                 'insert into pangu_website.batch_operation_log(goods_id, `type`, old_data, new_data, `user`, create_at) values({}, 12, "", "{}","{}" ,"{}");'
                 .format(i.get("goods_id"), i.get("content"), i.get("operator"), i.get("last_update_time")))
         File(path="../.././data/shippingGoodsLog.txt", txtData=saveData).writeTxt()
+
+    def styleImgCheck(self):
+        print("开始拉取盘古数据")
+        sql = PanGuTable(index="getGoodsStyleImg").getSql()
+        data = Db(sql=sql, param=(), db="panGuWebPron").getAll()
+        panGuMap = {}
+        for i in data:
+            panGuMap[str(i.get('goods_id')) + str(i.get('style_id'))] = i
+
+        print("开始拉取网站数据")
+        webMap = {}
+        sql = websiteTable(index="getGoodsStyleImg").getSql()
+        data = Db(sql=sql, param=(), db="websitePron").getAll()
+        for m in data:
+            webMap[str(m.get('goods_id')) + str(m.get('style_id'))] = m
+
+        goodsId = []
+        for k, v in panGuMap.items():
+            if webMap.get(k) is None:
+                goodsId.append(v.get("goods_id"))
+
+        print(goodsId)
+
+    def downloadImg(self):
+        data = File(path=self.param).read_excl()
+        goodsMap = {}
+        goodsList = []
+        for i in data:
+            goodsId = i[0]
+            if goodsMap.get(goodsId) is not None:
+                goodsMap.get(goodsId).append(i[2])
+            else:
+                goodsMap[goodsId] = [i[2]]
+                goodsList.append(goodsId)
+
+        newList = Array(target=goodsList, step=100).ArrayChunk()
+        self.param3 = goodsMap
+        MyThreading(num=20, data=newList, func=self.downGoodsImg).semaphoreJob()
+
+    def downGoodsImg(self, data, desc, semaphore):
+        print("开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+        for i in data:
+            print("开始下载商品 {} 图片".format(i))
+            urlList = self.param3.get(i)
+            self.save_image_from_url(urlList, i)
+
+        print("线程 {} 处理结束".format(desc))
+        # 释放锁
+        semaphore.release()
+
+    def save_image_from_url(self, urlList, goodsId):
+        PanGu.ensure_directory_exists("E:/MY_PROJECT/PYTHON/python-toolBox/data/goods_plus_img/" + str(goodsId))
+        num = 1
+        for url in urlList:
+            """下载图片并保存到指定路径"""
+            try:
+                response = requests.get(url, stream=True, timeout=10)
+                response.raise_for_status()
+                with open("E:/MY_PROJECT/PYTHON/python-toolBox/data/goods_plus_img/" + str(goodsId) + "/" + str(
+                        num) + ".jpg", 'wb') as f:
+                    for chunk in response.iter_content(1024):
+                        f.write(chunk)
+            except requests.RequestException as e:
+                print(f"Error downloading image from {url}: {e}")
+                return None
+            num = num + 1
+
+    @staticmethod
+    def ensure_directory_exists(directory_path):
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+            print(f"Directory '{directory_path}' created.")
+        else:
+            print(f"Directory '{directory_path}' already exists.")
+
+    def styleImgFix(self):
+
+        sql = PanGuTable(index="getStyleImgByCat").getSql()
+        data = Db(sql=sql, param=",".join(self.param), db="panGuWebPron", showlog=True).getAll()
+        self.resData = {}
+        for i in data:
+            self.resData[i.get('goods_id')] = {"cat_id": i.get("cat_id"), "num": i.get("num")}
+
+        print(len(self.resData))
+
+        newList = Array(target=list(self.resData.keys()), step=50).ArrayChunk()
+
+        # 调用接口获取sku状态
+        MyThreading(num=10, data=newList, func=self.getPanGuImgStyle).semaphoreJob()
+
+        File(path=self.param2, fileData={0: self.resData2}, sheetName={0: "原商品与克隆商品截图差异"},
+             sheetTitle={
+                 0: ["原id", "原id品类", "原id截图数", "克隆id", "克隆id品类", "克隆id截图数"]}).writeExcel()
+
+    def getPanGuImgStyle(self, data, desc, semaphore):
+        print("获取style img 开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+        for i in data:
+            sql = PanGuTable(index="getCloneId").getSql()
+            data = Db(sql=sql, param=i, db="panGuWebPron").getAll()
+            for m in data:
+                sql = PanGuTable(index="getSonImgStyle").getSql()
+                data = Db(sql=sql, param=m.get('id'), db="panGuWebPron").getOne()
+                if data.get('num') is not None:
+                    if data.get('num') != self.resData.get(i).get('num', 0):
+                        self.resData2.append(
+                            {"原id": i, "原id品类": self.resData.get(i).get('cat_id'), "克隆id": m.get('id'),
+                             "克隆id品类": m.get('cat_id'), "原id截图数": self.resData.get(i).get('num', 0),
+                             "克隆id截图数": data.get('num')})
+        # 释放锁
+        semaphore.release()
+        print("获取style img 结束处理 {} 数据".format(desc))
+
+    def inventoryStatistics(self):
+        resMap = {}
+        for k, v in self.param.items():
+            res = []
+            pskuList = []
+            sql = PanGuTable(index="getStockData").getSql()
+            data = Db(sql=sql, param=k, db="panguStockDb").getAll()
+            for m in data:
+                pskuList.append(m.get('psku'))
+                res.append(self.calculateInventory(m))
+            newList = Array(target=pskuList, step=500).ArrayChunk()
+            # 调用接口获取sku状态
+            MyThreading(num=10, data=newList, func=self.getPidInfo).semaphoreJob()
+            for s in res:
+                if self.resMap.get(s.get('psku')) is not None:
+                    s['pid'] = self.resMap.get(s.get('sku'))
+                else:
+                    s['pid'] = ""
+            resMap[v] = res
+
+        File(path=self.path,
+             fileData={0: resMap.get("UK"), 1: resMap.get("US"), 2: resMap.get("DE"), 3: resMap.get("AU"),
+                       4: resMap.get("CA")},
+             sheetName={0: 'UK', 1: 'US', 2: 'DE', 3: 'AU', 4: 'CA'},
+             sheetTitle={0: ["psku", "sku_tag", "pid", "facility_id", "available_num", "available_tryon_num",
+                             "available_sample_num"],
+                         1: ["psku", "sku_tag", "pid", "facility_id", "available_num", "available_tryon_num",
+                             "available_sample_num"],
+                         2: ["psku", "sku_tag", "pid", "facility_id", "available_num", "available_tryon_num",
+                             "available_sample_num"],
+                         3: ["psku", "sku_tag", "pid", "facility_id", "available_num", "available_tryon_num",
+                             "available_sample_num"],
+                         4: ["psku", "sku_tag", "pid", "facility_id", "available_num", "available_tryon_num",
+                             "available_sample_num"]
+                         }).writeExcel()
+
+    @staticmethod
+    def calculateInventory(data):
+        if Array(target=data.get("facility_id", 0), data=['1049275062', '2640152423', '2771772189', '3142292305']).InArray():
+            print("不需特殊处理")
+        elif data.get("sku_tag", 0) == '1':
+            print("不需特殊处理")
+        else:
+            data['available_sample_num'] = data.get("available_sample_num", 0) + data.get("available_tryon_num", 0)
+        return data
+
+    def getPidInfo(self, data, desc, semaphore):
+
+        print("获取 pid 开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+
+        sql = PanGuTable(index="getSkuPid").getSql()
+        data = Db(sql=sql, param="','".join(data), db="panGuPron").getAll()
+        for m in data:
+            self.resMap[m.get("sku")] = m.get("pid")
+        # 释放锁
+        semaphore.release()
+        print("获取pid 结束处理 {} 数据".format(desc))
+
+    def tryOnAndSampleStatistics(self):
+        resMap = {}
+        for k, v in self.param.items():
+            sql = PanGuTable(index="getClothsData").getSql()
+            data = Db(sql=sql, param=k, db="panGuWebPron").getAll()
+            pskuList = []
+            for m in data:
+                pskuList.append(m.get('psku'))
+            newList = Array(target=pskuList, step=500).ArrayChunk()
+            # 调用接口获取sku状态
+            MyThreading(num=10, data=newList, func=self.getFacilityInfo).semaphoreJob()
+            for s in data:
+                if self.resMap.get(s.get('psku')) is not None:
+                    s['facility_id'] = self.resMap.get(s.get('psku'))
+                else:
+                    s['facility_id'] = ""
+            resMap[v] = data
+
+        File(path=self.path,
+             fileData={0: resMap.get("试衣"), 1: resMap.get("样衣")},
+             sheetName={0: '试衣', 1: '样衣'},
+             sheetTitle={0: ["gid", "pid", "sku", "psku", "color", "size", "small_cat", "cat_name",
+                             "facility_id"],
+                         1: ["gid", "pid", "sku", "psku", "color", "size", "small_cat", "cat_name",
+                             "facility_id"]
+                         }).writeExcel()
+    def getFacilityInfo(self, data, desc, semaphore):
+        print("获取 仓库 开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+
+        sql = PanGuTable(index="getSkuFacility").getSql()
+        data = Db(sql=sql, param="','".join(data), db="panguStockDb").getAll()
+
+        facilityList = {
+            1049275062: 'UK',
+            1049275063: 'US',
+            2640152423: 'DE',
+            2771772189: 'AU',
+            3142292305: 'CA'
+        }
+        for m in data:
+            self.resMap[m.get("sku")] = facilityList.get(m.get("facility_id"), "")
+        # 释放锁
+        semaphore.release()
+        print("获取 仓库 结束处理 {} 数据".format(desc))
+
+    def getColorMap(self):
+        newColorMap = File(path=self.param).read_excl()
+        tmpNewColorMap = {}
+        for i in newColorMap:
+            if tmpNewColorMap.get(i.get("颜色")) is not None:
+                tmpNewColorMap.get(i.get("颜色")).append(i.get("PSKU"))
+            else:
+                tmpNewColorMap[i.get("颜色")] = [i.get("PSKU")]
+
+        oldColorMap = File(path=self.path).read_excl()
+        tmpOldColorMap = {}
+        for i in oldColorMap:
+            tmpOldColorMap[i.get("颜色")] = i.get("PSKU")
+
+        mapRelation = []
+        for k , v in tmpNewColorMap.items():
+            for m in v:
+                if tmpOldColorMap.get(k) is not None:
+                    mapRelation.append({"color": k, "psku_old": tmpOldColorMap.get(k), "psku_new": m})
+        print(len(mapRelation))
+        exit()
+        File(path="../.././data/色卡映射关系.xlsx", fileData={0: mapRelation}, sheetName={0: "色卡psku映射关系表"},
+             sheetTitle={0: ["color", "psku_old", "psku_new"]}).writeExcel()

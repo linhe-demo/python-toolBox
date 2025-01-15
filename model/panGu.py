@@ -234,6 +234,72 @@ class PanGuTable:
             ''',
             "getShippingGoodsLog": '''
                 select * from category_shipping_fee_log
+            ''',
+            "getGoodsStyleImg": '''
+                select * from goods_color_img;
+            ''',
+            "getGoodsStatus": '''
+                select id from goods where id in ('%s') and is_on_sale = 0
+            ''',
+            "getCloneId": '''
+                select * from goods where source_id = %s
+            ''',
+            "getSonImgStyle": '''
+                select 
+                        count(gci.gci_id) as num, g.cat_id 
+                from 
+                        goods_color_img gci 
+                inner join goods g on g.id = gci.goods_id 
+                where 
+                        gci.goods_id = %s and g.cat_id >= 400
+            ''',
+            "getStyleImgByCat": '''
+                SELECT
+	gci.goods_id,
+	g.cat_id,
+	count( gci.gci_id ) AS num 
+FROM
+	goods_color_img gci
+	INNER JOIN goods g ON g.id = gci.goods_id 
+	INNER JOIN goods_style_v2 gsv on gsv.goods_id =  gci.goods_id and gci.style_id = gsv.style_id and gsv.is_delete = 0
+WHERE
+	g.cat_id IN (%s) 
+	AND g.is_on_sale = 1
+	AND gci.is_delete = 0 
+GROUP BY
+	gci.goods_id
+            ''',
+            "getStockData": '''
+                select sku as psku, sku_tag, facility_id, available_num, available_tryon_num, available_sample_num from facility_stocks where facility_id = %s
+            ''',
+            "getSkuPid": '''
+                select sku, product_sn as pid from product_sku where sku in ('%s')
+            ''',
+            "getClothsData": '''
+                SELECT
+                    g.id AS gid,
+                    g.pid,
+                    gss.sku,
+                    gss.psku,
+                    s1.value as color,
+                    s2.value as `size`,
+                    c.cat_name as small_cat,
+                    pc.name as cat_name
+                FROM
+                    pangu_website.goods AS g
+                    INNER JOIN pangu_website.category c ON c.id = g.cat_id
+                    INNER JOIN pangu_website.goods_special_sku gss on gss.goods_id = g.id
+                    INNER JOIN pangu.category AS pc ON pc.id = c.pangu_id
+                    INNER JOIN pangu_website.style s1 ON s1.id = gss.color_id
+                    INNER JOIN pangu_website.style s2 ON s2.id = gss.size_id
+                WHERE
+                    c.parent_id = %s
+                    and g.is_on_sale = 1
+                    and g.is_display =1
+                    and g.is_delete = 0
+            ''',
+            "getSkuFacility": '''
+                SELECT facility_id, sku FROM facility_stocks WHERE sku IN ('%s')
             '''
         }
 

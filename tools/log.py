@@ -1,13 +1,13 @@
 # 日志记录类
 import os
 import socket
+from datetime import datetime
 
 from loguru import logger
 
 from common.typeEnum import TypeEnum
 from model.tencent import Tencent
-from pkg.db import Db
-from datetime import datetime
+
 
 
 class Log:
@@ -21,8 +21,9 @@ class Log:
         self.console = console
 
     def watchDog(self):
-        sql = Tencent(TypeEnum.OPERATION_LOG.value).getSql()
-        Db(sql, (self.ip, self.action, self.actionUser, self.date)).execute()
+        pass
+        # sql = Tencent(TypeEnum.OPERATION_LOG.value).getSql()
+        # Db(sql, (self.ip, self.action, self.actionUser, self.date)).execute()
 
     def localFile(self):
         logDir = os.path.expanduser('../.././log')  # expanduser函数，它可以将参数中开头部分的 ~ 或 ~user 替换为当前用户的home目录并返回

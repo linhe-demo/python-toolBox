@@ -1,15 +1,19 @@
 # 数据库查询类
+from datetime import datetime
+
 import pymysql
 
 from tools.file import File
+from tools.log import Log
 
 
 class Db:
-    def __init__(self, sql=None, param=None, db=None, showlog=None):
+    def __init__(self, sql=None, param=None, db=None, showlog=None, writeLog=None):
         self.config = self.config()
         self.sql = sql
         self.param = param
         self.db = db
+        self.writeLog = writeLog
         self.conn = self.connection()
         self.showLog = showlog
         self.cursor = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
@@ -33,7 +37,11 @@ class Db:
                                password=tmpConfig['password'], connect_timeout=tmpConfig['timeout'])
 
     def getAll(self):
+
         try:
+            if self.writeLog is True:
+                Log(level="INFO", text=self.sql % self.param, console=False).localFile()
+
             if self.showLog is True:
                 print(self.sql % self.param)
 
@@ -45,6 +53,8 @@ class Db:
 
     def getOne(self):
         try:
+            if self.writeLog is True:
+                Log(level="INFO", text=self.sql % self.param, console=False).localFile()
             if self.showLog is True:
                 print(self.sql % self.param)
             self.cursor.execute(self.sql % self.param)
@@ -54,7 +64,10 @@ class Db:
             return None
 
     def execute(self):
+        res = 0
         try:
+            if self.writeLog is True:
+                Log(level="INFO", text=self.sql % self.param, console=False).localFile()
             if self.showLog is True:
                 print(self.sql % self.param)
             if self.param is None:
@@ -62,7 +75,7 @@ class Db:
             else:
                 self.cursor.execute(self.sql % self.param)
             self.conn.commit()
-            return True
+            return self.cursor.lastrowid
         except Exception as e:
             print(f"Error: {e} %s" % format(self.sql % self.param))
             self.conn.rollback()

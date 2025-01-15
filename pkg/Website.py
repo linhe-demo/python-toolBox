@@ -1,3 +1,4 @@
+import json
 import re
 
 import unicodedata
@@ -7,6 +8,7 @@ from pkg.db import Db
 from tools.array import Array
 from tools.file import File
 from tools.sqlTool import SqlTool
+from tools.threadingTool import MyThreading
 
 
 class Website:
@@ -258,3 +260,82 @@ class Website:
             print(k, v)
 
         File(path="../.././data/diffStock.txt", txtData=diffList).writeTxt()
+
+    def getPlusDeleteData(self):
+
+        sql = websiteTable(index="getGoodsPlusData").getSql()
+        data = Db(sql=sql, param="','".join(self.param), db="websitePron").getAll()
+
+        newList = Array(target=data, step=100).ArrayChunk()
+
+        MyThreading(num=20, data=newList, func=self.getFixPlusImgData).semaphoreJob()
+
+        print(self.resData)
+
+    def getFixPlusImgData(self, data, desc, semaphore):
+        print("开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+        for i in data:
+            goodsId = i.get('goods_id')
+            print("开始处理 {}".format(goodsId))
+            if i.get('ext_name') == 'rear_image_plus_json':
+                tmpList = list(json.loads(i.get('ext_value')).values())
+                sql = websiteTable(index="getGoodsShopByColorImg").getSql()
+                tmpData = Db(sql=sql, param=(goodsId, "','".join(tmpList)), db="websitePron").getOne()
+                if tmpData is not None:
+                    self.resData.append(goodsId)
+            else:
+                sql = websiteTable(index="getGoodsPhotoImg").getSql()
+                tmpData = Db(sql=sql, param=i.get('ext_value'), db="websitePron").getOne()
+                if tmpData is not None:
+                    self.resData.append(goodsId)
+        # 释放锁
+        semaphore.release()
+
+    def getCombineProductSql(self):
+        sql = websiteTable(index="getCombineProductSql").getSql()
+        data = Db(sql=sql, param=(), db="websitePron").getAll()
+        mappingMap = {}
+
+        for i in data:
+            if mappingMap.get(i.get('ext_value')) is not None:
+                mappingMap.get(i.get('ext_value')).append(i.get('goods_id'))
+            else:
+                mappingMap[i.get('ext_value')] = [i.get('goods_id')]
+        sqlList = []
+        for k, v in mappingMap.items():
+            sql = websiteTable(index="getCombineGoods").getSql()
+            data = Db(sql=sql, param=k, db="websitePron").getOne()
+
+            sql = websiteTable(index="getCombineTpl").getSql()
+            tplData = Db(sql=sql, param=data.get("tpl_id"), db="websitePron").getOne()
+
+            mapping = json.loads(data.get("mapping"))
+            tmpMapping = {v: k for k, v in mapping.items()}
+            for m in v:
+                sql = "insert into pangu_website.combination_mapping(cp_id, cat_id, goods_id, attr_id, create_time) values(%s, %s, %s, %s, '%s');" % (k, tplData.get("cat_id"), m, tmpMapping.get(m), '2025-01-06 14:00:00')
+                sqlList.append(sql)
+
+        File(path="../.././data/combineGoodsMap.txt", txtData=sqlList).writeTxt()
+
+    def asyncBuyTheLook(self):
+        sql = websiteTable(index="getBuyTheLookData").getSql()
+        data = Db(sql=sql, param=(), db="websitePron").getAll()
+        for i in data:
+            delete = 0
+            if i.get("is_display") == 0:
+                delete = 1
+            insertSql1 = "INSERT INTO pangu_website.buy_the_look_config(cat_id, goods_id, gallery_id, is_delete, created_at) VALUES ({}, {}, 0, {}, '{}');"\
+                .format(i.get("cat_id"), i.get("goods_id"), delete, i.get("last_update_time"))
+
+            btlId = Db(sql=insertSql1, param=(), db="panGuWeb", showlog=True).execute()
+            num = 1
+            info = json.loads(i.get("ext_value"))
+
+            for k, v in info.get("related_goods").items():
+
+                insertSql2 = "INSERT INTO pangu_website.buy_the_look_product(btl_id, goods_id, `value`, `index`, is_delete, created_at) VALUES ({}, {}, '{}', {}, {}, '{}');"\
+                .format(btlId, k, v, num, delete, i.get("last_update_time"))
+                num = num + 1
+                Db(sql=insertSql2, param=(), db="panGuWeb", showlog=True).execute()

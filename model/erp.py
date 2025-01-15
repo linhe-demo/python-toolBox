@@ -43,6 +43,15 @@ WHERE
 	AND order_status <> 2 
 GROUP BY
 	s;
+            ''',
+            "getSku": '''
+                SELECT
+	egm.uniq_sku
+FROM
+	ecshop.ecs_goods_mapping egm 
+WHERE
+	1 
+	AND egm.uniq_sku LIKE '%s'
             '''
         }
 

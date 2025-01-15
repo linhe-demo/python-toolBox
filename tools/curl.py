@@ -95,6 +95,21 @@ class Curl:
             return "响应结束！"
         return res.content
 
+    def panGuSkuStatus(self):
+        try:
+            res = requests.post(self.url, data=self.param, headers={'content-type': 'application/json','Authorization': 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9wYW5ndS5zbWFsb28uY29tXC9hcGlcL2F1dGhvcml6YXRpb25zIiwiaWF0IjoxNzM0MzE0MTYxLCJleHAiOjE3MzQ0MDA1NjEsIm5iZiI6MTczNDMxNDE2MSwianRpIjoiRkJjYkxOWHpFdkdYMDU2WiIsInN1YiI6MywicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyJ9.mjYR3nEmDYVrVa64TxRVjO_DOEG_WWdZJw7idzASEu4'})
+        except Exception as e:
+            return "请求发生错误: {}".format(e)
+        if res.content is None:
+            return "接口返回数据为空！"
+        elif res.content == "":
+            return "接口返回空字符串！"
+        elif res.content is False:
+            return "响应结束！"
+        elif res.content == b'':
+            return "响应结束！"
+        return res.content
+
     def signFunc(self):
         newParam = sorted(self.param.items(), key=lambda x: x[0])
         newDict = {}

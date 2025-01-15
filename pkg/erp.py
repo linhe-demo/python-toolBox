@@ -1,23 +1,34 @@
 import calendar
 import datetime
+import json
 import math
 import time
 
 from common.warehouseEnum import WarehouseEnum
 from model.erp import ErpDatatable
+from model.panGu import PanGuTable
 from pkg.db import Db
 from pkg.highcharts import Highcharts
+from tools import curl
+from tools.array import Array
 from tools.curl import Curl
 from tools.file import File
+from tools.log import Log
+from tools.threadingTool import MyThreading
 
 
 class Erp:
-    def __init__(self, filePath=None, warehouse=None, orderSn=None, date=None):
+    def __init__(self, filePath=None, warehouse=None, orderSn=None, date=None, param=None):
+        self.param = param
         self.filePath = filePath
         self.orderSn = orderSn
         self.warehouse = warehouse
         self.type = WarehouseEnum
         self.date = date
+        self.res = {}
+        self.excelData = []
+        self.skuData = {}
+        self.noSaleList = {}
 
     def checkSkuExists(self):
         data = File(path=self.filePath).read_txt()
@@ -137,9 +148,110 @@ class Erp:
                 time.sleep(60)
                 tims = tims + 60
                 data = Curl(method="Apiv1/Wms/sku/statistics",
-                            param={"key": key,"time": str(tmpTime)},
+                            param={"key": key, "time": str(tmpTime)},
                             timestamp=tmpTime).getErpStockInfo()
                 if len(data.get('list')) > 0:
                     erpInventoryMap = data.get('list')
                     break
         return erpInventoryMap
+
+    @staticmethod
+    def getGoodsIdBySku(s):
+        index_g = s.find('g')
+        index_y = s.find('y')
+        index_s = s.find('s')
+
+        # 检查是否找到了这两个字符，并且'g'在'y'之前
+        if index_g != -1 and index_y != -1 and index_g < index_y:
+            goodsId = str(s[index_g + 1:index_y])
+            if goodsId.isdigit():
+                return goodsId
+            else:
+                return 0
+        else:
+            if index_g != -1 and index_s != -1 and index_g < index_s:
+                goodsId = str(s[index_g + 1:index_y])
+                if goodsId.isdigit():
+                    return goodsId
+                else:
+                    return 0
+            else:
+                return 0
+
+    def getSkuStatus(self):
+        # 获取需要处理的sku
+        sql = ErpDatatable(index="getSku").getSql()
+        data = Db(sql=sql, param=self.param, db="erp_db_prod", writeLog=True).getAll()
+        specialSku = []
+
+        print("本次处理的sku总个数：{}".format(len(data)))
+        for i in data:
+            goodsId = self.getGoodsIdBySku(i.get('uniq_sku'))
+            if goodsId == 0:
+                specialSku.append(i.get('uniq_sku'))
+            if self.skuData.get(str(goodsId)) is not None:
+                self.skuData.get(str(goodsId)).append(i.get('uniq_sku'))
+            else:
+                self.skuData[str(goodsId)] = [i.get('uniq_sku')]
+
+        GoodsList = list(self.skuData.keys())
+        print("本次共处理商品id个数：{}".format(len(GoodsList)))
+        skuStatusList = []
+
+        # 获取已下架的商品ID
+        newList = Array(target=GoodsList, step=500).ArrayChunk()
+
+        MyThreading(num=4, data=newList, func=self.getGoodsShelfStatus).semaphoreJob()
+        print(len(self.noSaleList))
+        for k, v in self.skuData.items():
+            if self.noSaleList.get(str(k)) is not None:
+                for m in v:
+                    skuStatusList.append("insert into tmp_sku (sku, status) values ('%s', 0);" % m)
+            else:
+                for n in v:
+                    specialSku.append(n)
+
+        print("已处理不在架sku个数：{}".format(len(skuStatusList)))
+
+        print("本次需要额外处理的sku个数：{}".format(len(specialSku)))
+        tmpNewList = Array(target=specialSku, step=400).ArrayChunk()
+
+        # 调用接口获取sku状态
+        MyThreading(num=3, data=tmpNewList, func=self.getPanGuSkuStatus).semaphoreJob()
+
+        for s in self.excelData:
+            skuStatusList.append(s)
+
+        print(len(skuStatusList))
+
+        File(path="../.././data/skuStatus.txt", txtData=skuStatusList).writeTxt()
+
+    def getGoodsShelfStatus(self, data, desc, semaphore):
+        # print("获取商品不在架 开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+        sql = PanGuTable(index="getGoodsStatus").getSql()
+        res = Db(sql=sql, param="','".join(data), db="panGuWebPron", writeLog=True).getAll()
+        for i in res:
+            self.noSaleList[str(i.get('id'))] = i.get('id')
+        # 释放锁
+        semaphore.release()
+        # print("获取商品不在架 结束处理 {} 数据".format(desc))
+    def getPanGuSkuStatus(self, data, desc, semaphore):
+        print("获取sku在架情况 开始处理 {} 数据".format(desc))
+        # 上锁
+        semaphore.acquire()
+        res = Curl(url="https://pangu.smaloo.com/api/erp/skuStatus",
+                   param=json.dumps({"web_skus": data})).panGuSkuStatus()
+        tmpData = json.loads(res)
+        if tmpData.get('code') == 200:
+            for m in data:
+                if tmpData.get('data').get(m) is not None:
+                    self.excelData.append(
+                        "insert into tmp_sku (sku, status) values ('{}', {});".format(m, tmpData.get('data').get(m)))
+                else:
+                    self.excelData.append(
+                        "insert into tmp_sku (sku, status) values ('{}', 2);".format(m))
+        print("获取sku在架情况 {} 处理结束".format(desc))
+        # 释放锁
+        semaphore.release()

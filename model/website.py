@@ -65,6 +65,39 @@ class websiteTable:
             ''',
             "getWebScreenData": '''
                 select * from goods_color_img
+            ''',
+            "getGoodsPlusData": '''
+                select * from goods_extension where  ext_name in ('%s') and goods_id = 150447;
+            ''',
+            "getGoodsShopByColorImg": '''
+                select * from goods_gallery where goods_id = %s and img_url in ('%s') and is_delete = 1
+            ''',
+            "getGoodsPhotoImg": '''
+                select * from goods_gallery where img_id = %s  and is_delete = 1
+            ''',
+            "getGoodsStyleImg": '''
+                        select * from goods_color_img;
+            ''',
+            "getCategoryAttribute": '''
+                select 
+				    av.url_attr_name
+                from 
+			        attribute_v2 av 
+                inner join attribute_category_display_filter ac on ac.attr_id = av.attr_id
+                where av.attr_name = '%s'
+                and ac.cat_id = %s and av.parent_id <> 0 and av.is_delete = 0;
+            ''',
+            "getCombineProductSql": '''
+                	select goods_id, ext_value from goods_extension where ext_name = 'combination_product_id';
+            ''',
+            "getCombineGoods": '''
+                select * from combination_products where id = %s
+            ''',
+            "getCombineTpl": '''
+                select * from combination_product_tpls where id = %s
+            ''',
+            "getBuyTheLookData": '''
+                select ge.*, g.cat_id from goods_extension ge inner join goods g on ge.goods_id = g.goods_id where ge.ext_name = 'buy_the_look_data';
             '''
         }
 
