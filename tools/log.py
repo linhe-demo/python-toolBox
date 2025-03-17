@@ -5,8 +5,6 @@ from datetime import datetime
 
 from loguru import logger
 
-from common.typeEnum import TypeEnum
-from model.tencent import Tencent
 
 
 

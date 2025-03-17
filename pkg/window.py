@@ -3,7 +3,6 @@ import tkinter as tk
 import re
 from tkinter import *
 from tkinter import filedialog
-from PIL import ImageTk, Image
 
 from common.errorEnum import ErrorEnum
 from common.typeEnum import TypeEnum

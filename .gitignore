@@ -6,3 +6,4 @@ log
 /script/*.html
 /script/erp/*.html
 ./tmp
+.venv
