@@ -1,11 +1,6 @@
-import os
-import sys
 import time
 
 from playwright.sync_api import sync_playwright
-from alive_progress import alive_bar
-
-from tools.show import Show
 
 
 def run():
@@ -36,7 +31,15 @@ def run():
             # 这里可以抓取详情页内容
             print(page.title())  # 示例：打印详情页标题
             time.sleep(2)  # 停顿一下，防止操作太快
-            showSlow(page, ".el-table__header-wrapper")
+            res = showSlow(page, ".el-table__header-wrapper")
+            if res is False:
+                # 返回上一页
+                page.go_back()
+                # 滚动到目标元素
+                showSlow(page, ".sampleImg")
+                time.sleep(2)
+                page.wait_for_selector(".sampleImg")  # 等待主页重新加载
+                continue
             getPageInfo(page)
 
             time.sleep(2)
@@ -50,15 +53,24 @@ def run():
         browser.close()
 
 def showSlow(page, target):
-    target_element = page.locator(target).first
-    element_position = target_element.evaluate("el => el.getBoundingClientRect().top + window.scrollY")
+    res = True
 
-    # 逐步滚动鼠标
-    current_position = page.evaluate("window.scrollY")
-    while current_position < element_position:
-        page.mouse.wheel(0, 150)  # 模拟鼠标滚轮往下滚动 150 像素
-        time.sleep(0.2)  # 等待 0.2 秒，模拟人手动滑动
+    try:
+        target_element = page.locator(target).first(timeout=3000)
+
+        element_position = target_element.evaluate("el => el.getBoundingClientRect().top + window.scrollY")
+
+        # 逐步滚动鼠标
         current_position = page.evaluate("window.scrollY")
+        while current_position < element_position:
+            page.mouse.wheel(0, 150)  # 模拟鼠标滚轮往下滚动 150 像素
+            time.sleep(0.2)  # 等待 0.2 秒，模拟人手动滑动
+            current_position = page.evaluate("window.scrollY")
+    except Exception as e:
+        res = False
+        print("未找到相关元素")
+    return res
+
 
 def getPageInfo(page):
         # 抓取目标信息

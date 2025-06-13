@@ -110,6 +110,21 @@ class Curl:
             return "响应结束！"
         return res.content
 
+    def sendMessageToUser(self):
+        try:
+            res = requests.post(self.url, data=self.param, headers={'content-type': 'application/json'})
+        except Exception as e:
+            return "请求发生错误: {}".format(e)
+        if res.content is None:
+            return "接口返回数据为空！"
+        elif res.content == "":
+            return "接口返回空字符串！"
+        elif res.content is False:
+            return "响应结束！"
+        elif res.content == b'':
+            return "响应结束！"
+        return res.content
+
     def signFunc(self):
         newParam = sorted(self.param.items(), key=lambda x: x[0])
         newDict = {}
